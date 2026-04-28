@@ -35,7 +35,8 @@
     "stylis": "^4.1.1",
     "stylis-plugin-rtl": "2.0.2",
     "typescript": "^4.7.4",
-    "web-vitals": "^1.1.2"
+    "web-vitals": "^1.1.2",
+    "zustand": "^5.0.12"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -68,11 +69,11 @@
     ]
   },
   "devDependencies": {
+    "@types/react": "17.0.40",
     "@types/react-calendar": "^3.5.2",
+    "@types/react-dom": "17.0.14",
     "@types/react-router-dom": "^5.3.3",
     "ajv": "^8.20.0",
-    "ajv-keywords": "^5.1.0",
-    "@types/react": "17.0.40",
-    "@types/react-dom": "17.0.14"
+    "ajv-keywords": "^5.1.0"
   }
 }

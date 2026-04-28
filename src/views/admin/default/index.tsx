@@ -1,136 +1,174 @@
-/*!
-  _   _  ___  ____  ___ ________  _   _   _   _ ___   
- | | | |/ _ \|  _ \|_ _|__  / _ \| \ | | | | | |_ _| 
- | |_| | | | | |_) || |  / / | | |  \| | | | | || | 
- |  _  | |_| |  _ < | | / /| |_| | |\  | | |_| || |
- |_| |_|\___/|_| \_\___/____\___/|_| \_|  \___/|___|
-                                                                                                                                                                                                                                                                                                                                       
-=========================================================
-* Horizon UI - v1.1.0
-=========================================================
+import React, { useState } from 'react';
+import {
+  Box,
+  SimpleGrid,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Icon,
+  useColorModeValue,
+  useDisclosure,
+  useToast,
+} from '@chakra-ui/react';
+import { MdReceipt, MdHistory } from 'react-icons/md';
 
-* Product Page: https://www.horizon-ui.com/
-* Copyright 2022 Horizon UI (https://www.horizon-ui.com/)
+// Child Components
+import WalletCard from '../wallet';
+import InvoicesTable from '../invoiceTable';
+import TransactionsTable from '../transactionTables';
+import TopUpModal from '../modals/topUp';
+import CreateInvoiceModal from '../modals/createInvoice';
+import RefundModal from '../modals/refundModal';
 
-* Designed and Coded by Simmmple
+// Initial Mock Data
+const initialTransactions = [
+  {
+    id: 'TRX-001',
+    date: '2026-04-28',
+    amount: 500000,
+    status: 'Success',
+    customer: 'John Doe',
+  },
+  {
+    id: 'TRX-002',
+    date: '2026-04-27',
+    amount: 1500000,
+    status: 'Success',
+    customer: 'Jane Smith',
+  },
+  {
+    id: 'TRX-003',
+    date: '2026-04-26',
+    amount: 750000,
+    status: 'Refunded',
+    customer: 'Bob Lee',
+  },
+];
 
-=========================================================
+const initialInvoices = [
+  {
+    id: 'INV-101',
+    date: '2026-04-28',
+    amount: 500000,
+    status: 'Paid',
+    link: 'https://pay.yourapp.com/INV-101',
+  },
+  {
+    id: 'INV-102',
+    date: '2026-04-29',
+    amount: 2500000,
+    status: 'Pending',
+    link: 'https://pay.yourapp.com/INV-102',
+  },
+];
 
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+export default function MerchantDashboard() {
+  const toast = useToast();
+  const cardBg = useColorModeValue('white', 'navy.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-*/
+  // Dashboard State
+  const [balance, setBalance] = useState(12500000);
+  const [invoices, setInvoices] = useState(initialInvoices);
+  const [transactions] = useState(initialTransactions);
+  const [selectedTxForRefund, setSelectedTxForRefund] = useState<any>(null);
 
-// Chakra imports
-import { Avatar, Box, Flex, FormLabel, Icon, Select, SimpleGrid, useColorModeValue } from '@chakra-ui/react';
-// Assets
-import Usa from 'assets/img/dashboards/usa.png';
-// Custom components
-import MiniCalendar from 'components/calendar/MiniCalendar';
-import MiniStatistics from 'components/card/MiniStatistics';
-import IconBox from 'components/icons/IconBox';
-import { MdAddTask, MdAttachMoney, MdBarChart, MdFileCopy } from 'react-icons/md';
-import CheckTable from 'views/admin/rtl/components/CheckTable';
-import ComplexTable from 'views/admin/default/components/ComplexTable';
-import DailyTraffic from 'views/admin/default/components/DailyTraffic';
-import PieCard from 'views/admin/default/components/PieCard';
-import Tasks from 'views/admin/default/components/Tasks';
-import TotalSpent from 'views/admin/default/components/TotalSpent';
-import WeeklyRevenue from 'views/admin/default/components/WeeklyRevenue';
-import tableDataCheck from 'views/admin/default/variables/tableDataCheck';
-import tableDataComplex from 'views/admin/default/variables/tableDataComplex';
+  // Modal Controls
+  const topUpModal = useDisclosure();
+  const createInvoiceModal = useDisclosure();
+  const refundModal = useDisclosure();
 
-export default function UserReports() {
-	// Chakra Color Mode
-	const brandColor = useColorModeValue('brand.500', 'white');
-	const boxBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
-	return (
-		<Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
-			<SimpleGrid columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }} gap='20px' mb='20px'>
-				<MiniStatistics
-					startContent={
-						<IconBox
-							w='56px'
-							h='56px'
-							bg={boxBg}
-							icon={<Icon w='32px' h='32px' as={MdBarChart as any} color={brandColor} />}
-						/>
-					}
-					name='Earnings'
-					value='$350.4'
-				/>
-				<MiniStatistics
-					startContent={
-						<IconBox
-							w='56px'
-							h='56px'
-							bg={boxBg}
-							icon={<Icon w='32px' h='32px' as={MdAttachMoney as any} color={brandColor} />}
-						/>
-					}
-					name='Spend this month'
-					value='$642.39'
-				/>
-				<MiniStatistics growth='+23%' name='Sales' value='$574.34' />
-				<MiniStatistics
-					endContent={
-						<Flex me='-16px' mt='10px'>
-							<FormLabel htmlFor='balance'>
-								<Avatar src={Usa} />
-							</FormLabel>
-							<Select id='balance' variant='mini' mt='5px' me='0px' defaultValue='usd'>
-								<option value='usd'>USD</option>
-								<option value='eur'>EUR</option>
-								<option value='gba'>GBA</option>
-							</Select>
-						</Flex>
-					}
-					name='Your balance'
-					value='$1,000'
-				/>
-				<MiniStatistics
-					startContent={
-						<IconBox
-							w='56px'
-							h='56px'
-							bg='linear-gradient(90deg, #4481EB 0%, #04BEFE 100%)'
-							icon={<Icon w='28px' h='28px' as={MdAddTask as any} color='white' />}
-						/>
-					}
-					name='New Tasks'
-					value='154'
-				/>
-				<MiniStatistics
-					startContent={
-						<IconBox
-							w='56px'
-							h='56px'
-							bg={boxBg}
-							icon={<Icon w='32px' h='32px' as={MdFileCopy as any} color={brandColor} />}
-						/>
-					}
-					name='Total Projects'
-					value='2935'
-				/>
-			</SimpleGrid>
+  // Action Handlers
+  const handleTopUpConfirm = (amount: number) => {
+    setBalance((prev) => prev + amount);
+    topUpModal.onClose();
+    toast({ title: 'Top-up Successful', status: 'success', duration: 3000 });
+  };
 
-			<SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap='20px' mb='20px'>
-				<TotalSpent />
-				<WeeklyRevenue />
-			</SimpleGrid>
-			<SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap='20px' mb='20px'>
-				<CheckTable tableData={tableDataCheck} />
-				<SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap='20px'>
-					<DailyTraffic />
-					<PieCard />
-				</SimpleGrid>
-			</SimpleGrid>
-			<SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap='20px' mb='20px'>
-				<ComplexTable tableData={tableDataComplex} />
-				<SimpleGrid columns={{ base: 1, md: 2, xl: 2 }} gap='20px'>
-					<Tasks />
-					<MiniCalendar h='100%' minW='100%' selectRange={false} />
-				</SimpleGrid>
-			</SimpleGrid>
-		</Box>
-	);
+  const handleInvoiceCreate = (newInvoice: any) => {
+    setInvoices([newInvoice, ...invoices]);
+    createInvoiceModal.onClose();
+    toast({ title: 'Invoice Created', status: 'success', duration: 3000 });
+  };
+
+  const handleRefundRequest = (trx: any) => {
+    setSelectedTxForRefund(trx);
+    refundModal.onOpen();
+  };
+
+  const submitRefundRequest = () => {
+    refundModal.onClose();
+    toast({
+      title: 'Refund Requested',
+      description: 'Our team will review this request.',
+      status: 'info',
+      duration: 4000,
+    });
+  };
+
+  return (
+    <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      {/* 1. Wallet Component */}
+      <SimpleGrid columns={{ base: 1, md: 2 }} gap="20px" mb="20px">
+        <WalletCard balance={balance} onOpenTopUp={topUpModal.onOpen} />
+      </SimpleGrid>
+
+      {/* 2. Main Dashboard Tabs */}
+      <Box
+        bg={cardBg}
+        borderRadius="20px"
+        p={6}
+        border="1px solid"
+        borderColor={borderColor}
+        boxShadow="sm"
+      >
+        <Tabs variant="soft-rounded" colorScheme="blue">
+          <TabList mb={4}>
+            <Tab>
+              <Icon as={MdReceipt as any} mr={2} /> Invoices
+            </Tab>
+            <Tab>
+              <Icon as={MdHistory as any} mr={2} /> Transactions & Refunds
+            </Tab>
+          </TabList>
+
+          <TabPanels>
+            <TabPanel px={0}>
+              <InvoicesTable
+                invoices={invoices}
+                onOpenCreate={createInvoiceModal.onOpen}
+              />
+            </TabPanel>
+
+            <TabPanel px={0}>
+              <TransactionsTable
+                transactions={transactions}
+                onRequestRefund={handleRefundRequest}
+              />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </Box>
+
+      {/* 3. Modals */}
+      <TopUpModal
+        isOpen={topUpModal.isOpen}
+        onClose={topUpModal.onClose}
+        onConfirm={handleTopUpConfirm}
+      />
+      <CreateInvoiceModal
+        isOpen={createInvoiceModal.isOpen}
+        onClose={createInvoiceModal.onClose}
+        onCreate={handleInvoiceCreate}
+      />
+      <RefundModal
+        isOpen={refundModal.isOpen}
+        onClose={refundModal.onClose}
+        transaction={selectedTxForRefund}
+        onSubmit={submitRefundRequest}
+      />
+    </Box>
+  );
 }
