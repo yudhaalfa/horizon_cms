@@ -8,10 +8,10 @@ import {
 } from 'react-icons/md';
 
 // Admin Imports
-import MainDashboard from 'views/admin/default';
-import NFTMarketplace from 'views/admin/marketplace';
+import MainDashboard from 'views/merchant/default';
+import NFTMarketplace from 'views/merchant/marketplace';
 // import Profile from 'views/admin/profile';
-import DataTables from 'views/admin/dataTables';
+import DataTables from 'views/merchant/dataTables';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';

@@ -24,12 +24,12 @@
 import { Box, Grid } from '@chakra-ui/react';
 
 // Custom components
-import Banner from 'views/admin/profile/components/Banner';
-import General from 'views/admin/profile/components/General';
-import Notifications from 'views/admin/profile/components/Notifications';
-import Projects from 'views/admin/profile/components/Projects';
-import Storage from 'views/admin/profile/components/Storage';
-import Upload from 'views/admin/profile/components/Upload';
+import Banner from 'views/merchant/profile/components/Banner';
+import General from 'views/merchant/profile/components/General';
+import Notifications from 'views/merchant/profile/components/Notifications';
+import Projects from 'views/merchant/profile/components/Projects';
+import Storage from 'views/merchant/profile/components/Storage';
+import Upload from 'views/merchant/profile/components/Upload';
 
 // Assets
 import banner from 'assets/img/auth/banner.png';

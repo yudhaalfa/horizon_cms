@@ -22,14 +22,14 @@
 
 // Chakra imports
 import { Box, SimpleGrid } from '@chakra-ui/react';
-import DevelopmentTable from 'views/admin/dataTables/components/DevelopmentTable';
-import CheckTable from 'views/admin/dataTables/components/CheckTable';
-import ColumnsTable from 'views/admin/dataTables/components/ColumnsTable';
-import ComplexTable from 'views/admin/dataTables/components/ComplexTable'; 
-import tableDataDevelopment from 'views/admin/dataTables/variables/tableDataDevelopment';
-import tableDataCheck from 'views/admin/dataTables/variables/tableDataCheck';
-import tableDataColumns from 'views/admin/dataTables/variables/tableDataColumns';
-import tableDataComplex from 'views/admin/dataTables/variables/tableDataComplex';
+import DevelopmentTable from 'views/merchant/dataTables/components/DevelopmentTable';
+import CheckTable from 'views/merchant/dataTables/components/CheckTable';
+import ColumnsTable from 'views/merchant/dataTables/components/ColumnsTable';
+import ComplexTable from 'views/merchant/dataTables/components/ComplexTable'; 
+import tableDataDevelopment from 'views/merchant/dataTables/variables/tableDataDevelopment';
+import tableDataCheck from 'views/merchant/dataTables/variables/tableDataCheck';
+import tableDataColumns from 'views/merchant/dataTables/variables/tableDataColumns';
+import tableDataComplex from 'views/merchant/dataTables/variables/tableDataComplex';
 
 export default function Settings() {
 	// Chakra Color Mode
