@@ -1,55 +1,98 @@
 import { Icon } from '@chakra-ui/react';
 import {
-  MdBarChart,
-  // MdPerson,
   MdHome,
   MdLock,
-  MdOutlineShoppingCart
+  MdAdminPanelSettings,
+  MdPayment,
+  MdReceipt,
+  MdCheckCircle,
 } from 'react-icons/md';
 
 // Admin Imports
-import MainDashboard from 'views/merchant/default';
-import NFTMarketplace from 'views/merchant/marketplace';
-// import Profile from 'views/admin/profile';
-import DataTables from 'views/merchant/dataTables';
+
+// Merchant Imports
+
+// Public Imports
+import PublicPayment from 'views/public/payment';
+import PaymentStatus from 'views/public/status';
+import InvoiceDetail from 'views/public/invoice';
 
 // Auth Imports
 import SignInCentered from 'views/auth/signIn';
+import AdminControlPanel from 'views/admin';
+import MerchantDashboard from 'views/merchant/default';
 
 const routes = [
+  // ========================================
+  // ADMIN INTERFACE
+  // ========================================
   {
-    name: 'Main Dashboard',
+    name: 'Admin Control Panel',
     layout: '/admin',
     path: '/default',
     icon: (
-      <Icon as={MdHome as any} width="20px" height="20px" color="inherit" />
-    ),
-    component: <MainDashboard />,
-  },
-  {
-    name: 'NFT Marketplace',
-    layout: '/admin',
-    path: '/nft-marketplace',
-    icon: (
       <Icon
-        as={MdOutlineShoppingCart as any}
+        as={MdAdminPanelSettings as any}
         width="20px"
         height="20px"
         color="inherit"
       />
     ),
-    component: <NFTMarketplace />,
-    secondary: true,
+    component: <AdminControlPanel />,
+  },
+
+  // ========================================
+  // MERCHANT INTERFACE
+  // ========================================
+  {
+    name: 'Merchant Dashboard',
+    layout: '/merchant',
+    path: '/default',
+    icon: (
+      <Icon as={MdHome as any} width="20px" height="20px" color="inherit" />
+    ),
+    component: <MerchantDashboard />,
+  },
+
+  // ========================================
+  // END USER PAYMENT PAGE (Public)
+  // ========================================
+  {
+    name: 'Public Payment',
+    layout: '/public',
+    path: '/payment',
+    icon: (
+      <Icon as={MdPayment as any} width="20px" height="20px" color="inherit" />
+    ),
+    component: <PublicPayment />,
   },
   {
-    name: 'Data Tables',
-    layout: '/admin',
+    name: 'Payment Status',
+    layout: '/public',
+    path: '/status/:id',
     icon: (
-      <Icon as={MdBarChart as any} width="20px" height="20px" color="inherit" />
+      <Icon
+        as={MdCheckCircle as any}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
     ),
-    path: '/data-tables',
-    component: <DataTables />,
+    component: <PaymentStatus />,
   },
+  {
+    name: 'Invoice Detail',
+    layout: '/public',
+    path: '/invoice/:id',
+    icon: (
+      <Icon as={MdReceipt as any} width="20px" height="20px" color="inherit" />
+    ),
+    component: <InvoiceDetail />,
+  },
+
+  // ========================================
+  // AUTHENTICATION
+  // // ========================================
   {
     name: 'Sign In',
     layout: '/auth',
@@ -58,6 +101,7 @@ const routes = [
       <Icon as={MdLock as any} width="20px" height="20px" color="inherit" />
     ),
     component: <SignInCentered />,
+    invisible: true
   },
 ];
 
