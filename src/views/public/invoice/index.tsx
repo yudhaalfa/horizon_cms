@@ -18,16 +18,42 @@ import {
   useColorModeValue,
   Badge,
   Icon,
+  Center,
 } from '@chakra-ui/react';
 import { FaPrint } from 'react-icons/fa';
 
+import { useMerchantStore } from 'store/useMerchantStore';
+
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
+
   const bgColor = useColorModeValue('white', 'navy.800');
   const textColor = useColorModeValue('gray.700', 'white');
+  const pageBg = useColorModeValue('gray.50', 'navy.900'); // Extracted this one to the top
+  const invoices = useMerchantStore((state) => state.invoices);
+
+  const invoice = invoices.find((inv) => inv.id === id);
+
+  const formatIDR = (val: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(val);
+
+  if (!invoice) {
+    return (
+      <Center minH="100vh" bg={pageBg}>
+        <VStack>
+          <Heading color="red.500">Invoice Not Found</Heading>
+          <Text>We couldn't find an invoice with the ID: {id}</Text>
+        </VStack>
+      </Center>
+    );
+  }
 
   return (
-    <Box minH="100vh" bg={useColorModeValue('gray.50', 'navy.900')} py={12}>
+    <Box minH="100vh" bg={pageBg} py={12}>
       <Container maxW="3xl">
         <HStack justify="flex-end" mb={4}>
           <Button
@@ -57,16 +83,28 @@ export default function InvoiceDetail() {
                 123 Business Road, Jakarta
               </Text>
               <Text color="gray.500" fontSize="sm">
-                contact@yourcompany.com
+                merchant@dbo.com
               </Text>
             </VStack>
             <VStack align="flex-end" spacing={1}>
               <Heading size="md" color={textColor}>
                 INVOICE
               </Heading>
-              <Text fontWeight="bold">{id}</Text>
-              <Badge colorScheme="green" px={3} py={1} mt={2} borderRadius="md">
-                PAID
+              <Text fontWeight="bold">{invoice.id}</Text>
+              <Badge
+                colorScheme={
+                  invoice.status === 'PAID'
+                    ? 'green'
+                    : invoice.status === 'PENDING'
+                      ? 'orange'
+                      : 'red'
+                }
+                px={3}
+                py={1}
+                mt={2}
+                borderRadius="md"
+              >
+                {invoice.status}
               </Badge>
             </VStack>
           </HStack>
@@ -78,16 +116,17 @@ export default function InvoiceDetail() {
               <Text color="gray.500" fontSize="sm">
                 Billed To:
               </Text>
-              <Text fontWeight="bold">John Doe</Text>
+              <Text fontWeight="bold">{invoice.customerName}</Text>
               <Text color="gray.500" fontSize="sm">
-                johndoe@email.com
+                {invoice.customerName.toLowerCase().replace(/\s/g, '')}
+                @email.com
               </Text>
             </VStack>
             <VStack align="flex-end" spacing={1}>
               <Text color="gray.500" fontSize="sm">
-                Date Paid:
+                Invoice Date:
               </Text>
-              <Text fontWeight="medium">{new Date().toLocaleDateString()}</Text>
+              <Text fontWeight="medium">{invoice.date}</Text>
             </VStack>
           </HStack>
 
@@ -102,25 +141,24 @@ export default function InvoiceDetail() {
             </Thead>
             <Tbody>
               <Tr>
-                <Td py={4}>Premium Plan Subscription (1 Year)</Td>
+                <Td py={4}>{invoice.description}</Td>
                 <Td isNumeric py={4}>
                   1
                 </Td>
                 <Td isNumeric py={4}>
-                  Rp 1.500.000
+                  {formatIDR(invoice.amount)}
                 </Td>
                 <Td isNumeric py={4} fontWeight="medium">
-                  Rp 1.500.000
+                  {formatIDR(invoice.amount)}
                 </Td>
               </Tr>
-              {/* Add more rows here if needed */}
             </Tbody>
           </Table>
 
           <VStack align="flex-end" spacing={2} w="100%">
             <HStack justify="space-between" w="250px">
               <Text color="gray.500">Subtotal</Text>
-              <Text>Rp 1.500.000</Text>
+              <Text>{formatIDR(invoice.amount)}</Text>
             </HStack>
             <HStack justify="space-between" w="250px">
               <Text color="gray.500">Tax (0%)</Text>
@@ -132,7 +170,7 @@ export default function InvoiceDetail() {
                 Total
               </Text>
               <Text fontWeight="bold" fontSize="lg" color="blue.500">
-                Rp 1.500.000
+                {formatIDR(invoice.amount)}
               </Text>
             </HStack>
           </VStack>

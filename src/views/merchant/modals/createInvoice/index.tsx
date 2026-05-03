@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -18,7 +18,11 @@ import {
 interface CreateInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (invoice: any) => void;
+  onCreate: (data: {
+    customerName: string;
+    amount: number;
+    description: string;
+  }) => void;
 }
 
 export default function CreateInvoiceModal({
@@ -26,17 +30,22 @@ export default function CreateInvoiceModal({
   onClose,
   onCreate,
 }: CreateInvoiceModalProps) {
+  const [customerName, setCustomerName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newId = `INV-${Math.floor(Math.random() * 1000) + 100}`;
-    const newInvoice = {
-      id: newId,
-      date: new Date().toISOString().split('T')[0],
-      amount: 100000, // Simulated amount
-      status: 'Pending',
-      link: `https://pay.yourapp.com/${newId}`,
-    };
-    onCreate(newInvoice);
+    onCreate({
+      customerName,
+      amount: Number(amount),
+      description,
+    });
+
+    // Clear form after submit
+    setCustomerName('');
+    setAmount('');
+    setDescription('');
   };
 
   return (
@@ -50,15 +59,28 @@ export default function CreateInvoiceModal({
             <VStack spacing={4}>
               <FormControl isRequired>
                 <FormLabel>Customer Name</FormLabel>
-                <Input placeholder="John Doe" />
+                <Input
+                  placeholder="John Doe"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
               </FormControl>
               <FormControl isRequired>
-                <FormLabel>Amount</FormLabel>
-                <Input type="number" placeholder="150000" />
+                <FormLabel>Amount (IDR)</FormLabel>
+                <Input
+                  type="number"
+                  placeholder="150000"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
               </FormControl>
               <FormControl>
                 <FormLabel>Description</FormLabel>
-                <Textarea placeholder="Payment for services..." />
+                <Textarea
+                  placeholder="Payment for services..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </FormControl>
             </VStack>
           </ModalBody>
@@ -66,7 +88,11 @@ export default function CreateInvoiceModal({
             <Button variant="ghost" mr={3} onClick={onClose}>
               Cancel
             </Button>
-            <Button colorScheme="blue" type="submit">
+            <Button
+              colorScheme="blue"
+              type="submit"
+              isDisabled={!customerName || !amount}
+            >
               Generate Link
             </Button>
           </ModalFooter>

@@ -1,160 +1,264 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
+  SimpleGrid,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
+  Icon,
   useColorModeValue,
-  useDisclosure,
+  Text,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Button,
+  Badge,
+  HStack,
   useToast,
 } from '@chakra-ui/react';
-import AdminStats from './components/adminStats';
-import PaymentSimulation from './components/paymentSimulation';
-import RefundManagement from './components/refundManagement';
-import ConfirmationModal from './components/modal';
+import { MdPayment, MdAutorenew } from 'react-icons/md';
 
-// Child Components
-
-// Mock Data
-const initialIntents = [
-  { id: 'PI-101', customer: 'Budi Santoso', amount: 250000, status: 'PENDING' },
-  { id: 'PI-102', customer: 'Siti Aminah', amount: 1500000, status: 'SUCCESS' },
-  { id: 'PI-103', customer: 'Andi Wijaya', amount: 75000, status: 'PENDING' },
-];
-
-const initialRefunds = [
-  {
-    id: 'REF-001',
-    trxId: 'TRX-892',
-    merchant: 'Toko Baju A',
-    amount: 250000,
-    reason: 'Out of stock',
-    status: 'PENDING',
-  },
-  {
-    id: 'REF-002',
-    trxId: 'TRX-112',
-    merchant: 'Toko Sepatu B',
-    amount: 800000,
-    reason: 'Customer cancel',
-    status: 'APPROVED',
-  },
-];
+// 1. We import strictly from our new Admin wrapper!
+import { useAdminStore } from 'store/useAdminStore';
 
 export default function AdminControlPanel() {
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  // State
-  const [intents, setIntents] = useState(initialIntents);
-  const [refunds, setRefunds] = useState(initialRefunds);
+  // 2. Pull exactly what the Admin is allowed to see and do
+  const invoices = useAdminStore((state) => state.invoices);
+  const refunds = useAdminStore((state) => state.refunds);
+  const transactions = useAdminStore((state) => state.transactions);
+  const simulatePayment = useAdminStore((state) => state.simulatePayment);
+  const processRefund = useAdminStore((state) => state.processRefund);
 
-  // Modal State
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [modalConfig, setModalConfig] = useState<any>({});
+  // 3. Filter data for the active panels
+  const pendingInvoices = invoices.filter((inv) => inv.status === 'PENDING');
+  const pendingRefunds = refunds.filter((ref) => ref.status === 'PENDING');
 
-  // --- Handlers ---
+  // Dashboard Stats
+  const totalVolume = transactions
+    .filter((t) => t.status === 'SUCCESS')
+    .reduce((sum, t) => sum + t.amount, 0);
 
-  // 1. Triggered when Admin clicks Set Success/Failed in Simulation
-  const handlePaymentSimulationClick = (
-    id: string,
-    status: 'SUCCESS' | 'FAILED',
-  ) => {
-    setModalConfig({
-      title: `Confirm Payment ${status}`,
-      message: `Are you sure you want to force status ${status} on Intent ${id}?`,
-      confirmText: `Set ${status}`,
-      colorScheme: status === 'SUCCESS' ? 'green' : 'red',
-      onConfirm: () => {
-        setIntents((prev) =>
-          prev.map((i) => (i.id === id ? { ...i, status } : i)),
-        );
-        toast({ title: `Payment marked as ${status}`, status: 'success' });
-        onClose();
-      },
+  const formatIDR = (val: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+    }).format(val);
+
+  // 4. Action Handlers
+  const handleSimulate = (id: string, isSuccess: boolean) => {
+    simulatePayment(id, isSuccess);
+    toast({
+      title: `Payment ${isSuccess ? 'Success' : 'Failed'} Simulated`,
+      status: isSuccess ? 'success' : 'error',
+      duration: 3000,
     });
-    onOpen();
   };
 
-  // 2. Triggered when Admin clicks Approve/Reject in Refunds
-  const handleRefundActionClick = (
-    id: string,
-    action: 'APPROVE' | 'REJECT',
-  ) => {
-    const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-    setModalConfig({
-      title: `${action} Refund Request`,
-      message: `Are you sure you want to ${action.toLowerCase()} refund request ${id}?`,
-      confirmText: action,
-      colorScheme: action === 'APPROVE' ? 'green' : 'red',
-      onConfirm: () => {
-        setRefunds((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)),
-        );
-        toast({
-          title: `Refund ${newStatus}`,
-          status: action === 'APPROVE' ? 'success' : 'info',
-        });
-        onClose();
-      },
+  const handleRefund = (id: string, isApproved: boolean) => {
+    processRefund(id, isApproved);
+    toast({
+      title: `Refund ${isApproved ? 'Approved' : 'Rejected'}`,
+      status: isApproved ? 'success' : 'warning',
+      duration: 3000,
     });
-    onOpen();
   };
-
-  // Calculated Stats
-  const pendingRefundsCount = refunds.filter(
-    (r) => r.status === 'PENDING',
-  ).length;
 
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
-      {/* 1. Statistics Module */}
-      <AdminStats
-        totalVolume={1455000000}
-        successRate="98.2%"
-        pendingRefunds={pendingRefundsCount}
-      />
+      {/* STATS ROW */}
+      <SimpleGrid columns={{ base: 1, md: 3 }} gap="20px" mb="20px">
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="20px"
+          border="1px solid"
+          borderColor={borderColor}
+        >
+          <Text color="gray.500" fontSize="sm">
+            Total Trx Volume
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold">
+            {formatIDR(totalVolume)}
+          </Text>
+        </Box>
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="20px"
+          border="1px solid"
+          borderColor={borderColor}
+        >
+          <Text color="gray.500" fontSize="sm">
+            Pending Refunds
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+            {pendingRefunds.length}
+          </Text>
+        </Box>
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="20px"
+          border="1px solid"
+          borderColor={borderColor}
+        >
+          <Text color="gray.500" fontSize="sm">
+            Total Successful Trx
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold">
+            {transactions.filter((t) => t.status === 'SUCCESS').length}
+          </Text>
+        </Box>
+      </SimpleGrid>
 
-      {/* 2. Admin Operational Tabs */}
+      {/* ADMIN CONTROLS TABS */}
       <Box
         bg={cardBg}
         borderRadius="20px"
         p={6}
         border="1px solid"
         borderColor={borderColor}
-        boxShadow="sm"
       >
-        <Tabs variant="enclosed" colorScheme="blue">
+        <Tabs variant="soft-rounded" colorScheme="blue">
           <TabList mb={4}>
-            <Tab fontWeight="medium">Payment Simulation</Tab>
-            <Tab fontWeight="medium">
-              Refunds {pendingRefundsCount > 0 && `(${pendingRefundsCount})`}
+            <Tab>
+              <Icon as={MdPayment as any} mr={2} /> Payment Simulator
+            </Tab>
+            <Tab>
+              <Icon as={MdAutorenew as any} mr={2} />
+              Refund Management
+              {pendingRefunds.length > 0 && (
+                <Badge ml={2} colorScheme="red">
+                  {pendingRefunds.length}
+                </Badge>
+              )}
             </Tab>
           </TabList>
 
           <TabPanels>
+            {/* PAYMENT SIMULATOR PANEL */}
             <TabPanel px={0}>
-              <PaymentSimulation
-                intents={intents}
-                onSetStatus={handlePaymentSimulationClick}
-              />
+              <Text mb={4} color="gray.500">
+                Test payment webhooks by triggering success or failure states on
+                pending invoices.
+              </Text>
+              <Box overflowX="auto">
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>Invoice ID</Th>
+                      <Th>Customer</Th>
+                      <Th>Amount</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {pendingInvoices.length === 0 ? (
+                      <Tr>
+                        <Td colSpan={4} textAlign="center">
+                          No pending invoices to simulate.
+                        </Td>
+                      </Tr>
+                    ) : (
+                      pendingInvoices.map((inv) => (
+                        <Tr key={inv.id}>
+                          <Td fontWeight="bold">{inv.id}</Td>
+                          <Td>{inv.customerName}</Td>
+                          <Td>{formatIDR(inv.amount)}</Td>
+                          <Td>
+                            <HStack spacing={2}>
+                              <Button
+                                size="sm"
+                                colorScheme="green"
+                                onClick={() => handleSimulate(inv.id, true)}
+                              >
+                                Simulate Success
+                              </Button>
+                              <Button
+                                size="sm"
+                                colorScheme="red"
+                                variant="outline"
+                                onClick={() => handleSimulate(inv.id, false)}
+                              >
+                                Simulate Fail
+                              </Button>
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))
+                    )}
+                  </Tbody>
+                </Table>
+              </Box>
             </TabPanel>
 
+            {/* REFUND MANAGEMENT PANEL */}
             <TabPanel px={0}>
-              <RefundManagement
-                refunds={refunds}
-                onProcessRefund={handleRefundActionClick}
-              />
+              <Box overflowX="auto">
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>Refund ID</Th>
+                      <Th>Trx ID</Th>
+                      <Th>Reason</Th>
+                      <Th>Amount</Th>
+                      <Th>Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {pendingRefunds.length === 0 ? (
+                      <Tr>
+                        <Td colSpan={5} textAlign="center">
+                          No pending refund requests.
+                        </Td>
+                      </Tr>
+                    ) : (
+                      pendingRefunds.map((ref) => (
+                        <Tr key={ref.id}>
+                          <Td fontWeight="bold">{ref.id}</Td>
+                          <Td>{ref.transactionId}</Td>
+                          <Td maxW="200px" isTruncated>
+                            {ref.reason}
+                          </Td>
+                          <Td>{formatIDR(ref.amount)}</Td>
+                          <Td>
+                            <HStack spacing={2}>
+                              <Button
+                                size="sm"
+                                colorScheme="blue"
+                                onClick={() => handleRefund(ref.id, true)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                colorScheme="red"
+                                variant="ghost"
+                                onClick={() => handleRefund(ref.id, false)}
+                              >
+                                Reject
+                              </Button>
+                            </HStack>
+                          </Td>
+                        </Tr>
+                      ))
+                    )}
+                  </Tbody>
+                </Table>
+              </Box>
             </TabPanel>
           </TabPanels>
         </Tabs>
       </Box>
-
-      {/* Global Confirmation Modal for Admin Actions */}
-      <ConfirmationModal isOpen={isOpen} onClose={onClose} {...modalConfig} />
     </Box>
   );
 }

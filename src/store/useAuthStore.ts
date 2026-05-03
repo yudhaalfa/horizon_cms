@@ -3,7 +3,6 @@ import { persist, devtools } from 'zustand/middleware';
 
 export type Role = 'admin' | 'merchant' | 'guest';
 
-// 2. Define the User Interface
 export interface User {
   id: string;
   name: string;
@@ -12,7 +11,7 @@ export interface User {
 }
 
 interface AuthState {
-  user: User | null;
+  user: User;
   token: string | null;
   isAuthenticated: boolean;
   role: Role;

@@ -3,7 +3,6 @@ import { Portal, Box, useDisclosure } from '@chakra-ui/react';
 import Footer from 'components/footer/FooterAdmin';
 // Layout components
 import Navbar from 'components/navbar/NavbarAdmin';
-import Sidebar from 'components/sidebar/Sidebar';
 import { SidebarContext } from 'contexts/SidebarContext';
 import { useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -15,11 +14,19 @@ export default function Dashboard(props: { [x: string]: any }) {
   // states and functions
   const [fixed] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState(false);
+
+  // --- DYNAMIC LAYOUT DETECTION ---
+  // This checks the URL to see which dashboard we are currently rendering
+  const currentLayout = window.location.pathname.startsWith('/merchant')
+    ? '/merchant'
+    : '/admin';
+
   // functions for changing the states from components
   const getRoute = () => {
-    return window.location.pathname !== '/admin/full-screen-maps';
+    return window.location.pathname !== `${currentLayout}/full-screen-maps`;
   };
-  const getActiveRoute = (routes: RoutesType[]): string => {
+
+  const getActiveRoute = (routes: any[]): string => {
     let activeRoute = 'Default Brand Text';
     for (let i = 0; i < routes.length; i++) {
       if (
@@ -30,7 +37,8 @@ export default function Dashboard(props: { [x: string]: any }) {
     }
     return activeRoute;
   };
-  const getActiveNavbar = (routes: RoutesType[]): boolean => {
+
+  const getActiveNavbar = (routes: any[]): boolean => {
     let activeNavbar = false;
     for (let i = 0; i < routes.length; i++) {
       if (
@@ -41,7 +49,8 @@ export default function Dashboard(props: { [x: string]: any }) {
     }
     return activeNavbar;
   };
-  const getActiveNavbarText = (routes: RoutesType[]): string | boolean => {
+
+  const getActiveNavbarText = (routes: any[]): string | boolean => {
     let activeNavbar = false;
     for (let i = 0; i < routes.length; i++) {
       if (
@@ -52,9 +61,12 @@ export default function Dashboard(props: { [x: string]: any }) {
     }
     return activeNavbar;
   };
-  const getRoutes = (routes: RoutesType[]): any => {
-    return routes.map((route: RoutesType, key: any) => {
-      if (route.layout === '/admin') {
+
+  const getRoutes = (routes: any[]): any => {
+    return routes.map((route: any, key: any) => {
+      // --- DYNAMIC ROUTE FILTERING ---
+      // Only render routes that belong to the current active layout
+      if (route.layout === currentLayout) {
         return (
           <Route path={`${route.path}`} element={route.component} key={key} />
         );
@@ -63,8 +75,10 @@ export default function Dashboard(props: { [x: string]: any }) {
       }
     });
   };
+
   document.documentElement.dir = 'ltr';
   const { onOpen } = useDisclosure();
+
   return (
     <Box>
       <SidebarContext.Provider
@@ -73,7 +87,6 @@ export default function Dashboard(props: { [x: string]: any }) {
           setToggleSidebar,
         }}
       >
-        <Sidebar routes={routes} display="none" {...rest} />
         <Box
           float="right"
           minHeight="100vh"
@@ -92,7 +105,6 @@ export default function Dashboard(props: { [x: string]: any }) {
             <Box>
               <Navbar
                 onOpen={onOpen}
-                logoText={'Horizon UI Dashboard PRO'}
                 brandText={getActiveRoute(routes)}
                 secondary={getActiveNavbar(routes)}
                 message={getActiveNavbarText(routes)}
@@ -112,9 +124,10 @@ export default function Dashboard(props: { [x: string]: any }) {
             >
               <Routes>
                 {getRoutes(routes)}
+                {/* --- DYNAMIC FALLBACK REDIRECT --- */}
                 <Route
                   path="/"
-                  element={<Navigate to="/admin/default" replace />}
+                  element={<Navigate to={`${currentLayout}/default`} replace />}
                 />
               </Routes>
             </Box>

@@ -8,7 +8,7 @@ export default function AdminNavbar(props: {
 	secondary: boolean;
 	message: string|boolean;
 	brandText: string;
-	logoText: string;
+	logoText?: string;
 	fixed: boolean;
 	onOpen: (...args: any[]) => any;
 }) {
@@ -24,7 +24,6 @@ export default function AdminNavbar(props: {
 
 	const { secondary,  brandText } = props;
 
-	// Here are all the props that may change depending on navbar's type or state.(secondary, variant, scrolled)
 	let mainText = useColorModeValue('navy.700', 'white');
 	let secondaryText = useColorModeValue('gray.700', 'white');
 	let navbarPosition = 'fixed' as const;
@@ -95,19 +94,6 @@ export default function AdminNavbar(props: {
 				alignItems={{ xl: 'center' }}
 				mb={gap}>
 				<Box mb={{ sm: '8px', md: '0px' }}>
-					<Breadcrumb>
-						<BreadcrumbItem color={secondaryText} fontSize='sm' mb='5px'>
-							<BreadcrumbLink href='#' color={secondaryText}>
-								Pages
-							</BreadcrumbLink>
-						</BreadcrumbItem>
-
-						<BreadcrumbItem color={secondaryText} fontSize='sm'>
-							<BreadcrumbLink href='#' color={secondaryText}>
-								{brandText}
-							</BreadcrumbLink>
-						</BreadcrumbItem>
-					</Breadcrumb>
 					{/* Here we create navbar brand, based on route name */}
 					<Link
 						color={mainText}

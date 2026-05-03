@@ -14,14 +14,7 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { MdAutorenew } from 'react-icons/md';
-
-interface Transaction {
-  id: string;
-  date: string;
-  amount: number;
-  status: string;
-  customer: string;
-}
+import { Transaction } from 'store/useGlobalData';
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -33,6 +26,7 @@ export default function TransactionsTable({
   onRequestRefund,
 }: TransactionsTableProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
+
   const formatIDR = (val: number) =>
     new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -61,11 +55,19 @@ export default function TransactionsTable({
               <Tr key={trx.id}>
                 <Td fontWeight="bold">{trx.id}</Td>
                 <Td>{trx.date}</Td>
-                <Td>{trx.customer}</Td>
+                <Td>{trx.customerName}</Td>
                 <Td>{formatIDR(trx.amount)}</Td>
                 <Td>
                   <Badge
-                    colorScheme={trx.status === 'Success' ? 'green' : 'red'}
+                    colorScheme={
+                      trx.status === 'SUCCESS'
+                        ? 'green'
+                        : trx.status === 'FAILED'
+                          ? 'red'
+                          : trx.status === 'REFUND_PENDING'
+                            ? 'orange'
+                            : 'gray'
+                    }
                   >
                     {trx.status}
                   </Badge>
@@ -75,7 +77,10 @@ export default function TransactionsTable({
                     size="sm"
                     colorScheme="red"
                     variant="ghost"
-                    isDisabled={trx.status === 'Refunded'}
+                    isDisabled={
+                      trx.status === 'REFUNDED' ||
+                      trx.status === 'REFUND_PENDING'
+                    }
                     onClick={() => onRequestRefund(trx)}
                     leftIcon={<Icon as={MdAutorenew as any} />}
                   >
