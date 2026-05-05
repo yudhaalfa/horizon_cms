@@ -1,13 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type InvoiceStatus = 'PENDING' | 'PAID' | 'EXPIRED';
+export type InvoiceStatus = 'PENDING' | 'WAITING' | 'PAID' | 'EXPIRED' | 'FAILED';
 export type TransactionStatus =
+  | 'PENDING'
   | 'SUCCESS'
   | 'FAILED'
   | 'REFUND_PENDING'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  | 'WAITING';
 export type RefundStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type TopUpStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+
+export interface TopUpRequest {
+  id: string;
+  amount: number;
+  status: TopUpStatus;
+  date: string;
+}
 
 export interface Invoice {
   id: string;
@@ -25,6 +35,7 @@ export interface Transaction {
   amount: number;
   status: TransactionStatus;
   date: string;
+  method?: string;
 }
 export interface RefundRequest {
   id: string;
@@ -40,25 +51,36 @@ export interface DataState {
   invoices: Invoice[];
   transactions: Transaction[];
   refunds: RefundRequest[];
+  topUps: TopUpRequest[];
 }
 
 export interface MerchantActions {
-  topUpWallet: (amount: number) => void;
-  createInvoice: (
-    data: Omit<Invoice, 'id' | 'status' | 'date' | 'link'>,
-  ) => void;
+  requestTopUp: (amount: number) => void;
+  createInvoice: (data: {
+    customerName: string;
+    description: string;
+    amount: number;
+    merchantName?: string;
+  }) => void;
   requestRefund: (transactionId: string, reason: string) => void;
+  // Public
+  createPaymentIntent: (invoiceId: string, method: string) => void;
+  expireInvoice: (invoiceId: string) => void;
 }
 
 export interface AdminActions {
   simulatePayment: (invoiceId: string, isSuccess: boolean) => void;
+  resolvePaymentIntent: (transactionId: string, isSuccess: boolean) => void;
+  expireInvoice: (invoiceId: string) => void;
   processRefund: (refundId: string, isApproved: boolean) => void;
+  processTopUp: (topUpId: string, isApproved: boolean) => void;
+  processPublicPayment: (invoiceId: string) => void;
 }
 
 export type GlobalStore = DataState & MerchantActions & AdminActions;
 
 // ==========================================
-// 3. Dummy Data
+// Dummy Data
 // ==========================================
 const initialInvoices: Invoice[] = [
   {
@@ -111,37 +133,52 @@ const initialRefunds: RefundRequest[] = [
   },
 ];
 
-// ==========================================
-// 4. The Global Store
-// ==========================================
+const initialTopUps: TopUpRequest[] = [];
+
 export const useGlobalData = create<GlobalStore>()(
   persist(
     (set, get) => ({
-      // STATE
       balance: 12500000,
       invoices: initialInvoices,
       transactions: initialTransactions,
       refunds: initialRefunds,
+      topUps: initialTopUps,
 
       // MERCHANT ACTIONS
-      topUpWallet: (amount) =>
-        set((state) => ({ balance: Number(state.balance) + Number(amount) })),
+      requestTopUp: (amount: number) => {
+        const newTopUp: TopUpRequest = {
+          id: `TOP-${Math.floor(8000 + Math.random() * 1000)}`,
+          amount: Number(amount),
+          status: 'PENDING',
+          date: new Date().toISOString().split('T')[0],
+        };
+        set((state) => ({
+          topUps: [newTopUp, ...state.topUps],
+        }));
+      },
+      
       createInvoice: (data) => {
-        const newId = `INV-${Math.floor(1000 + Math.random() * 9000)}`;
+        const timestampPart = Date.now().toString().slice(-6);
+        const randomPart = Math.floor(100 + Math.random() * 900);
+        const newId = `INV-${timestampPart}${randomPart}`;
+
         const newInvoice: Invoice = {
           ...data,
           id: newId,
           status: 'PENDING',
           date: new Date().toISOString().split('T')[0],
-          link: `https://pay.yourapp.com/${newId}`,
+          link: `https://pay.yourapp.com/pay/${newId}`,
         };
+
         set((state) => ({ invoices: [newInvoice, ...state.invoices] }));
       },
+      
       requestRefund: (transactionId, reason) => {
         const transaction = get().transactions.find(
           (t) => t.id === transactionId,
         );
         if (!transaction) return;
+
         const newRefund: RefundRequest = {
           id: `REF-${Math.floor(5000 + Math.random() * 4000)}`,
           transactionId,
@@ -150,8 +187,8 @@ export const useGlobalData = create<GlobalStore>()(
           status: 'PENDING',
           date: new Date().toISOString().split('T')[0],
         };
+
         set((state) => ({
-          balance: Number(state.balance) - Number(transaction.amount),
           refunds: [newRefund, ...state.refunds],
           transactions: state.transactions.map((trx) =>
             trx.id === transactionId
@@ -165,6 +202,7 @@ export const useGlobalData = create<GlobalStore>()(
       simulatePayment: (invoiceId, isSuccess) => {
         const invoice = get().invoices.find((i) => i.id === invoiceId);
         if (!invoice || invoice.status === 'PAID') return;
+        
         const newTrx: Transaction = {
           id: `TRX-${Math.floor(9000 + Math.random() * 1000)}`,
           invoiceId,
@@ -173,10 +211,11 @@ export const useGlobalData = create<GlobalStore>()(
           status: isSuccess ? 'SUCCESS' : 'FAILED',
           date: new Date().toISOString().split('T')[0],
         };
+        
         set((state) => ({
           invoices: state.invoices.map((inv) =>
             inv.id === invoiceId
-              ? { ...inv, status: isSuccess ? 'PAID' : inv.status }
+              ? { ...inv, status: isSuccess ? 'PAID' : 'FAILED' }
               : inv,
           ),
           transactions: [newTrx, ...state.transactions],
@@ -185,9 +224,11 @@ export const useGlobalData = create<GlobalStore>()(
             : state.balance,
         }));
       },
+      
       processRefund: (refundId, isApproved) => {
         const refund = get().refunds.find((r) => r.id === refundId);
         if (!refund || refund.status !== 'PENDING') return;
+
         set((state) => ({
           refunds: state.refunds.map((r) =>
             r.id === refundId
@@ -199,9 +240,102 @@ export const useGlobalData = create<GlobalStore>()(
               ? { ...trx, status: isApproved ? 'REFUNDED' : 'SUCCESS' }
               : trx,
           ),
-          balance: !isApproved
-            ? Number(state.balance) + Number(refund.amount)
+          balance: isApproved
+            ? Number(state.balance) - Number(refund.amount)
             : state.balance,
+        }));
+      },
+      
+      processTopUp: (topUpId: string, isApproved: boolean) => {
+        const topUp = get().topUps.find((t) => t.id === topUpId);
+        if (!topUp || topUp.status !== 'PENDING') return;
+
+        set((state) => ({
+          topUps: state.topUps.map((t) =>
+            t.id === topUpId
+              ? { ...t, status: isApproved ? 'SUCCESS' : 'FAILED' }
+              : t,
+          ),
+          balance: isApproved
+            ? Number(state.balance) + Number(topUp.amount)
+            : state.balance,
+        }));
+      },
+
+      processPublicPayment: (invoiceId: string) => {
+        const invoice = get().invoices.find((i) => i.id === invoiceId);
+        if (!invoice || invoice.status === 'PAID') return;
+
+        const newTrx: Transaction = {
+          id: `TRX-${Math.floor(9000 + Math.random() * 1000)}`,
+          invoiceId,
+          customerName: invoice.customerName,
+          amount: invoice.amount,
+          status: 'SUCCESS',
+          date: new Date().toISOString().split('T')[0],
+        };
+
+        set((state) => ({
+          invoices: state.invoices.map((inv) =>
+            inv.id === invoiceId ? { ...inv, status: 'PAID' } : inv,
+          ),
+          transactions: [newTrx, ...state.transactions],
+          balance: Number(state.balance) + Number(invoice.amount),
+        }));
+      },
+      
+      createPaymentIntent: (invoiceId, method) => {
+        const invoice = get().invoices.find((i) => i.id === invoiceId);
+        if (!invoice || invoice.status !== 'PENDING') return;
+
+        const newTrx: Transaction = {
+          id: `TRX-${Math.floor(9000 + Math.random() * 1000)}`,
+          invoiceId,
+          customerName: invoice.customerName,
+          amount: invoice.amount,
+          status: 'WAITING', 
+          date: new Date().toISOString().split('T')[0],
+          method,
+        };
+
+        set((state) => ({ 
+          transactions: [newTrx, ...state.transactions],
+          invoices: state.invoices.map((inv) =>
+            inv.id === invoiceId ? { ...inv, status: 'WAITING' } : inv
+          ),
+        }));
+      },
+
+      resolvePaymentIntent: (transactionId, isSuccess) => {
+        const trx = get().transactions.find((t) => t.id === transactionId);
+        if (!trx || trx.status !== 'WAITING') return; 
+
+        set((state) => ({
+          transactions: state.transactions.map((t) =>
+            t.id === transactionId
+              ? { ...t, status: isSuccess ? 'SUCCESS' : 'FAILED' }
+              : t,
+          ),
+
+          invoices: state.invoices.map((inv) =>
+              inv.id === trx.invoiceId 
+                ? { ...inv, status: isSuccess ? 'PAID' : 'FAILED' } 
+                : inv,
+          ),
+
+          balance: isSuccess
+            ? Number(state.balance) + Number(trx.amount)
+            : state.balance,
+        }));
+      },
+
+      expireInvoice: (invoiceId) => {
+        set((state) => ({
+          invoices: state.invoices.map((inv) =>
+            inv.id === invoiceId && inv.status === 'PENDING'
+              ? { ...inv, status: 'EXPIRED' }
+              : inv,
+          ),
         }));
       },
     }),

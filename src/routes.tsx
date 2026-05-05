@@ -21,11 +21,9 @@ import InvoiceDetail from 'views/public/invoice';
 import SignInCentered from 'views/auth/signIn';
 import AdminControlPanel from 'views/admin';
 import MerchantDashboard from 'views/merchant/default';
+import FailedPayment from 'views/public/failedPay';
 
 const routes = [
-  // ========================================
-  // ADMIN INTERFACE
-  // ========================================
   {
     name: 'Admin Control Panel',
     layout: '/admin',
@@ -41,9 +39,6 @@ const routes = [
     component: <AdminControlPanel />,
   },
 
-  // ========================================
-  // MERCHANT INTERFACE
-  // ========================================
   {
     name: 'Merchant Dashboard',
     layout: '/merchant',
@@ -53,10 +48,7 @@ const routes = [
     ),
     component: <MerchantDashboard />,
   },
-
-  // ========================================
-  // END USER PAYMENT PAGE (Public)
-  // ========================================
+  // Public
   {
     name: 'Public Payment',
     layout: '/public',
@@ -65,6 +57,15 @@ const routes = [
       <Icon as={MdPayment as any} width="20px" height="20px" color="inherit" />
     ),
     component: <PublicPayment />,
+  },
+  {
+    name: 'Failed Payment',
+    layout: '/public',
+    path: '/payment-failed',
+    icon: (
+      <Icon as={MdPayment as any} width="20px" height="20px" color="inherit" />
+    ),
+    component: <FailedPayment />,
   },
   {
     name: 'Payment Status',
@@ -89,10 +90,6 @@ const routes = [
     ),
     component: <InvoiceDetail />,
   },
-
-  // ========================================
-  // AUTHENTICATION
-  // // ========================================
   {
     name: 'Sign In',
     layout: '/auth',

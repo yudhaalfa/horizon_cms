@@ -4,29 +4,32 @@ import AdminLayout from './layouts/admin';
 import RTLLayout from './layouts/rtl';
 import './assets/css/App.css';
 import { ChakraProvider } from '@chakra-ui/react';
-import initialTheme from './theme/theme'; 
+import initialTheme from './theme/theme';
 import { useState } from 'react';
 
-// Public Imports
 import PublicPayment from 'views/public/payment';
 import PaymentStatus from 'views/public/status';
 import InvoiceDetail from 'views/public/invoice';
+import FailedPayment from 'views/public/failedPay';
 
-// Zustand Store
-import { useAuthStore } from 'store/useAuthStore'; 
+import { useAuthStore } from 'store/useAuthStore';
+import Register from 'views/auth/register';
 
 export default function Main() {
   const [currentTheme, setCurrentTheme] = useState(initialTheme);
-  
-  // Grab auth state from Zustand
-  const { isAuthenticated, role } = useAuthStore();
+
+  const user = useAuthStore((state) => state.user);
+
+  const isAuthenticated = !!user;
+  const role = user?.role;
 
   return (
     <ChakraProvider theme={currentTheme}>
       <Routes>
-        {/* --- Public & Auth Routes (No Login Required) --- */}
         <Route path="auth/*" element={<AuthLayout />} />
-        <Route path="public-payment" element={<PublicPayment />} />
+        <Route path="register" element={<Register />} />
+        <Route path="pay/:token" element={<PublicPayment />} />
+        <Route path="payment-failed" element={<FailedPayment />} />
         <Route path="public-status/:id" element={<PaymentStatus />} />
         <Route path="public-invoice/:id" element={<InvoiceDetail />} />
 
@@ -35,10 +38,10 @@ export default function Main() {
           path="admin/*"
           element={
             isAuthenticated ? (
-              role === 'admin' ? (
-                <AdminLayout theme={currentTheme} setTheme={setCurrentTheme} /> 
+              role === 'ADMIN' ? (
+                <AdminLayout theme={currentTheme} setTheme={setCurrentTheme} />
               ) : (
-                <Navigate to="/merchant/default" replace />
+                <Navigate to="/merchant/dashboard" replace />
               )
             ) : (
               <Navigate to="/auth/sign-in" replace />
@@ -50,7 +53,7 @@ export default function Main() {
         <Route
           path="merchant/*"
           element={
-            isAuthenticated && role === 'merchant' ? (
+            isAuthenticated && role === 'MERCHANT' ? (
               <AdminLayout theme={currentTheme} setTheme={setCurrentTheme} />
             ) : (
               <Navigate to="/auth/sign-in" replace />
@@ -58,7 +61,6 @@ export default function Main() {
           }
         />
 
-        {/* --- RTL Layout --- */}
         <Route
           path="rtl/*"
           element={
@@ -66,13 +68,18 @@ export default function Main() {
           }
         />
 
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            isAuthenticated 
-              ? <Navigate to={role === 'admin' ? "/admin/default" : "/merchant/default"} replace /> 
-              : <Navigate to="/auth/sign-in" replace />
-          } 
+            isAuthenticated ? (
+              <Navigate
+                to={role === 'ADMIN' ? '/admin/default' : '/merchant/default'}
+                replace
+              />
+            ) : (
+              <Navigate to="/auth/sign-in" replace />
+            )
+          }
         />
       </Routes>
     </ChakraProvider>

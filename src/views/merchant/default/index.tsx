@@ -2,81 +2,122 @@ import React, { useState } from 'react';
 import {
   Box,
   SimpleGrid,
+  Text,
+  useColorModeValue,
+  useDisclosure,
+  useToast,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
-  Icon,
-  useColorModeValue,
-  useDisclosure,
-  useToast,
+  Button,
+  Flex,
 } from '@chakra-ui/react';
-import { MdReceipt, MdHistory } from 'react-icons/md';
 
-// Zustand Store
-import { useMerchantStore } from 'store/useMerchantStore';
-import WalletCard from '../wallet';
+import { useGlobalData } from 'store/useGlobalData';
+
 import InvoicesTable from '../invoiceTable';
-import TransactionsTable from '../transactionTables';
-import TopUpModal from '../modals/topUp';
 import CreateInvoiceModal from '../modals/createInvoice';
-import RefundModal from '../modals/refundModal';
+import TopUpHistoryTable from '../topUpHistory';
+import TopUpModal from '../modals/topUp';
+import TransactionsTable from '../transactionTables';
+import RequestRefundModal from '../modals/refundModal';
 
-// Child Components
 
 export default function MerchantDashboard() {
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const balance = useMerchantStore((state) => state.balance);
-  const invoices = useMerchantStore((state) => state.invoices);
-  const transactions = useMerchantStore((state) => state.transactions);
-  const topUpWallet = useMerchantStore((state) => state.topUpWallet);
-  const createInvoice = useMerchantStore((state) => state.createInvoice);
-  const requestRefund = useMerchantStore((state) => state.requestRefund);
+  const {
+    isOpen: isInvoiceOpen,
+    onOpen: onInvoiceOpen,
+    onClose: onInvoiceClose,
+  } = useDisclosure();
+  const {
+    isOpen: isTopUpOpen,
+    onOpen: onTopUpOpen,
+    onClose: onTopUpClose,
+  } = useDisclosure();
+  const {
+    isOpen: isRefundOpen,
+    onOpen: onRefundOpen,
+    onClose: onRefundClose,
+  } = useDisclosure();
 
-  const [selectedTxForRefund, setSelectedTxForRefund] = useState<any>(null);
+  const [selectedTrxId, setSelectedTrxId] = useState<string | null>(null);
 
-  const topUpModal = useDisclosure();
-  const createInvoiceModal = useDisclosure();
-  const refundModal = useDisclosure();
+  const balance = useGlobalData((state) => state.balance);
+  const invoices = useGlobalData((state) => state.invoices);
+  const topUps = useGlobalData((state) => state.topUps);
+  const transactions = useGlobalData((state) => state.transactions);
 
-  const handleTopUpConfirm = (amount: number) => {
-    topUpWallet(amount);
-    topUpModal.onClose();
-    toast({ title: 'Top-up Successful', status: 'success', duration: 3000 });
-  };
+  const createInvoice = useGlobalData((state) => state.createInvoice);
+  const requestTopUp = useGlobalData((state) => state.requestTopUp);
+  const requestRefund = useGlobalData((state) => state.requestRefund);
 
-  const handleInvoiceCreate = (newInvoiceData: any) => {
-    createInvoice(newInvoiceData);
-    createInvoiceModal.onClose();
-    toast({ title: 'Invoice Created', status: 'success', duration: 3000 });
-  };
+  const formatIDR = (val: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(val);
 
-  const handleRefundRequestClick = (trx: any) => {
-    setSelectedTxForRefund(trx);
-    refundModal.onOpen();
-  };
-
-  const submitRefundRequest = (reason: string) => {
-    if (selectedTxForRefund) {
-      requestRefund(selectedTxForRefund.id, reason);
-    }
-    refundModal.onClose();
+  const handleCreateInvoice = (data: any) => {
+    createInvoice(data);
     toast({
-      title: 'Refund Requested',
-      description: 'Our team will review this request.',
-      status: 'info',
-      duration: 4000,
+      title: 'Payment Link Generated',
+      status: 'success',
+      duration: 3000,
     });
+  };
+
+  const handleRequestTopUp = (amount: number) => {
+    requestTopUp(amount);
+    toast({ title: 'Top-Up Requested', status: 'info', duration: 3000, position: 'top' });
+  };
+
+  const handleOpenRefundModal = (id: string) => {
+    setSelectedTrxId(id);
+    onRefundOpen();
+  };
+
+  const handleSubmitRefund = (reason: string) => {
+    if (selectedTrxId) {
+      requestRefund(selectedTrxId, reason);
+      toast({
+        title: 'Refund Requested',
+        description: 'Pending Admin approval.',
+        status: 'info',
+        duration: 3000,
+        position: 'top',
+      });
+    }
   };
 
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
-      <SimpleGrid columns={{ base: 1, md: 2 }} gap="20px" mb="20px">
-        <WalletCard balance={balance} onOpenTopUp={topUpModal.onOpen} />
+      <SimpleGrid columns={{ base: 1, md: 3 }} gap="20px" mb="20px">
+        <Box
+          bg={cardBg}
+          p={6}
+          borderRadius="20px"
+          border="1px solid"
+          borderColor={borderColor}
+        >
+          <Text color="gray.500" fontSize="sm" mb={1}>
+            Wallet Balance
+          </Text>
+          <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+            <Text fontSize="2xl" fontWeight="bold" color="green.500">
+              {formatIDR(balance)}
+            </Text>
+            <Button size="sm" colorScheme="green" onClick={onTopUpOpen}>
+              + Request Top-Up
+            </Button>
+          </Flex>
+        </Box>
       </SimpleGrid>
 
       <Box
@@ -85,51 +126,46 @@ export default function MerchantDashboard() {
         p={6}
         border="1px solid"
         borderColor={borderColor}
-        boxShadow="sm"
       >
         <Tabs variant="soft-rounded" colorScheme="blue">
-          <TabList mb={4}>
-            <Tab>
-              <Icon as={MdReceipt as any} mr={2} /> Invoices
-            </Tab>
-            <Tab>
-              <Icon as={MdHistory as any} mr={2} /> Transactions & Refunds
-            </Tab>
+          <TabList mb={4} overflowX="auto" whiteSpace="nowrap">
+            <Tab>Invoices</Tab>
+            <Tab>Transactions</Tab>
+            <Tab>Top-Up History</Tab>
           </TabList>
 
           <TabPanels>
-            <TabPanel px={0}>
-              <InvoicesTable
-                invoices={invoices}
-                onOpenCreate={createInvoiceModal.onOpen}
-              />
+            <TabPanel px={0} pt={0}>
+              <InvoicesTable invoices={invoices} onOpenCreate={onInvoiceOpen} />
             </TabPanel>
-
-            <TabPanel px={0}>
+            <TabPanel px={0} pt={0}>
               <TransactionsTable
                 transactions={transactions}
-                onRequestRefund={handleRefundRequestClick}
+                onOpenRefund={handleOpenRefundModal}
               />
+            </TabPanel>
+            <TabPanel px={0} pt={0}>
+              <TopUpHistoryTable topUps={topUps} />
             </TabPanel>
           </TabPanels>
         </Tabs>
       </Box>
 
-      <TopUpModal
-        isOpen={topUpModal.isOpen}
-        onClose={topUpModal.onClose}
-        onConfirm={handleTopUpConfirm}
-      />
+      {/* Modals */}
       <CreateInvoiceModal
-        isOpen={createInvoiceModal.isOpen}
-        onClose={createInvoiceModal.onClose}
-        onCreate={handleInvoiceCreate}
+        isOpen={isInvoiceOpen}
+        onClose={onInvoiceClose}
+        onCreate={handleCreateInvoice}
       />
-      <RefundModal
-        isOpen={refundModal.isOpen}
-        onClose={refundModal.onClose}
-        transaction={selectedTxForRefund}
-        onSubmit={submitRefundRequest}
+      <TopUpModal
+        isOpen={isTopUpOpen}
+        onClose={onTopUpClose}
+        onSubmit={handleRequestTopUp}
+      />
+      <RequestRefundModal
+        isOpen={isRefundOpen}
+        onClose={onRefundClose}
+        onSubmit={handleSubmitRefund}
       />
     </Box>
   );

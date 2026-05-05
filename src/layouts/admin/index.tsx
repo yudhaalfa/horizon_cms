@@ -1,27 +1,24 @@
-// Chakra imports
 import { Portal, Box, useDisclosure } from '@chakra-ui/react';
 import Footer from 'components/footer/FooterAdmin';
-// Layout components
 import Navbar from 'components/navbar/NavbarAdmin';
 import { SidebarContext } from 'contexts/SidebarContext';
 import { useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import routes from 'routes';
 
-// Custom Chakra theme
 export default function Dashboard(props: { [x: string]: any }) {
   const { ...rest } = props;
-  // states and functions
+
   const [fixed] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState(false);
 
-  // --- DYNAMIC LAYOUT DETECTION ---
-  // This checks the URL to see which dashboard we are currently rendering
+
+
   const currentLayout = window.location.pathname.startsWith('/merchant')
     ? '/merchant'
     : '/admin';
 
-  // functions for changing the states from components
+
   const getRoute = () => {
     return window.location.pathname !== `${currentLayout}/full-screen-maps`;
   };
@@ -64,8 +61,6 @@ export default function Dashboard(props: { [x: string]: any }) {
 
   const getRoutes = (routes: any[]): any => {
     return routes.map((route: any, key: any) => {
-      // --- DYNAMIC ROUTE FILTERING ---
-      // Only render routes that belong to the current active layout
       if (route.layout === currentLayout) {
         return (
           <Route path={`${route.path}`} element={route.component} key={key} />
@@ -94,8 +89,8 @@ export default function Dashboard(props: { [x: string]: any }) {
           overflow="auto"
           position="relative"
           maxHeight="100%"
-          w={{ base: '100%', xl: 'calc( 100% - 290px )' }}
-          maxWidth={{ base: '100%', xl: 'calc( 100% - 290px )' }}
+          w="100%"
+          maxWidth="100%"
           transition="all 0.33s cubic-bezier(0.685, 0.0473, 0.346, 1)"
           transitionDuration=".2s, .2s, .35s"
           transitionProperty="top, bottom, width"
@@ -124,7 +119,6 @@ export default function Dashboard(props: { [x: string]: any }) {
             >
               <Routes>
                 {getRoutes(routes)}
-                {/* --- DYNAMIC FALLBACK REDIRECT --- */}
                 <Route
                   path="/"
                   element={<Navigate to={`${currentLayout}/default`} replace />}

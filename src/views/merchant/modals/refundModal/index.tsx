@@ -1,19 +1,47 @@
 import React, { useState } from 'react';
-import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, Button, FormControl, FormLabel, Textarea, Text } from '@chakra-ui/react';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  useToast,
+  Text,
+} from '@chakra-ui/react';
 
-interface RefundModalProps {
+interface RequestRefundModalProps {
   isOpen: boolean;
   onClose: () => void;
-  transaction: any;
   onSubmit: (reason: string) => void;
 }
 
-export default function RefundModal({ isOpen, onClose, transaction, onSubmit }: RefundModalProps) {
+export default function RequestRefundModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: RequestRefundModalProps) {
   const [reason, setReason] = useState('');
+  const toast = useToast();
 
   const handleSubmit = () => {
+    if (!reason.trim()) {
+      toast({
+        title: 'Please provide a reason',
+        status: 'error',
+        duration: 2000,
+        position: 'top',
+      });
+      return;
+    }
     onSubmit(reason);
-    setReason(''); // clear after submit
+    setReason('');
+    onClose();
   };
 
   return (
@@ -23,21 +51,27 @@ export default function RefundModal({ isOpen, onClose, transaction, onSubmit }: 
         <ModalHeader>Request Refund</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text mb={4}>
-            Are you sure you want to request a refund for <b>{transaction?.id}</b> ({transaction?.customerName})?
+          <Text mb={4} color="gray.500" fontSize="sm">
+            Please state the reason for this refund. Once requested, an Admin
+            must approve it. If approved, the amount will be deducted from your
+            wallet balance.
           </Text>
-          <FormControl isRequired>
-            <FormLabel>Reason for Refund</FormLabel>
-            <Textarea 
-              placeholder="e.g., Customer cancelled order..." 
-              value={reason} 
-              onChange={(e) => setReason(e.target.value)} 
+          <FormControl>
+            <FormLabel>Refund Reason</FormLabel>
+            <Input
+              placeholder="e.g., Customer cancelled order, Out of stock..."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
             />
           </FormControl>
         </ModalBody>
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>Cancel</Button>
-          <Button colorScheme="red" onClick={handleSubmit} isDisabled={!reason}>Submit Request</Button>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="orange" onClick={handleSubmit}>
+            Submit Request
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
