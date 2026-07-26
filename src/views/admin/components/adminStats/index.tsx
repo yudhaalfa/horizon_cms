@@ -12,12 +12,38 @@ import {
   StatNumber,
   Icon,
   Flex,
+  Button,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  useToast,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Badge,
+  VStack,
 } from '@chakra-ui/react';
-import { MdReceipt, MdTrendingUp, MdAutorenew } from 'react-icons/md';
+import {
+  MdReceipt,
+  MdTrendingUp,
+  MdAutorenew,
+  MdFilterList,
+} from 'react-icons/md';
 
 import { useGlobalData } from 'store/useGlobalData';
 
 export default function AdminStatistics() {
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const cardBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -25,9 +51,15 @@ export default function AdminStatistics() {
   const transactions = useGlobalData((state) => state.transactions);
   const refunds = useGlobalData((state) => state.refunds);
 
-  const [selectedMerchant, setSelectedMerchant] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  // Temporary State (Hanya diubah saat mengetik di Modal)
+  const [tempMerchant, setTempMerchant] = useState('');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+
+  // Applied State (Hanya aktif setelah menekan tombol "Terapkan Filter")
+  const [appliedMerchant, setAppliedMerchant] = useState('');
+  const [appliedStartDate, setAppliedStartDate] = useState('');
+  const [appliedEndDate, setAppliedEndDate] = useState('');
 
   const uniqueMerchants = useMemo(() => {
     const merchants = invoices.map(
@@ -36,15 +68,76 @@ export default function AdminStatistics() {
     return Array.from(new Set(merchants));
   }, [invoices]);
 
+  // Handler Konfirmasi Filter dengan Validasi Date >= Today
+  const handleApplyFilter = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Validasi 1: Start Date >= Today
+    if (tempStartDate && tempStartDate < todayStr) {
+      toast({
+        title: 'Validasi Tanggal Gagal',
+        description:
+          'Tanggal mulai (Start Date) harus sama atau setelah hari ini (Date ≥ Today).',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
+    // Validasi 2: End Date >= Start Date
+    if (tempStartDate && tempEndDate && tempEndDate < tempStartDate) {
+      toast({
+        title: 'Validasi Tanggal Gagal',
+        description:
+          'Tanggal selesai (End Date) tidak boleh lebih awal dari Tanggal mulai.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+      return;
+    }
+
+    // Terapkan state jika lolos validasi
+    setAppliedMerchant(tempMerchant);
+    setAppliedStartDate(tempStartDate);
+    setAppliedEndDate(tempEndDate);
+
+    toast({
+      title: 'Filter Berhasil Diterapkan',
+      status: 'success',
+      duration: 2000,
+      position: 'top',
+    });
+
+    onClose();
+  };
+
+  const handleResetFilter = () => {
+    setTempMerchant('');
+    setTempStartDate('');
+    setTempEndDate('');
+    setAppliedMerchant('');
+    setAppliedStartDate('');
+    setAppliedEndDate('');
+    onClose();
+  };
+
+  // Callback Filter berbasis Applied States
   const filterByDateAndMerchant = useCallback(
     (item: any) => {
       const itemMerchant = item.merchantName || 'Default Merchant';
-      if (selectedMerchant && itemMerchant !== selectedMerchant) return false;
+      if (appliedMerchant && itemMerchant !== appliedMerchant) return false;
 
-      if (item.date) {
-        const itemD = new Date(item.date);
-        const startD = startDate ? new Date(startDate) : null;
-        const endD = endDate ? new Date(endDate) : null;
+      const itemDateStr = item.createdAt || item.date;
+      if (itemDateStr) {
+        const itemD = new Date(itemDateStr);
+        const startD = appliedStartDate ? new Date(appliedStartDate) : null;
+        const endD = appliedEndDate
+          ? new Date(`${appliedEndDate}T23:59:59`)
+          : null;
 
         if (startD && itemD < startD) return false;
         if (endD && itemD > endD) return false;
@@ -52,7 +145,7 @@ export default function AdminStatistics() {
 
       return true;
     },
-    [selectedMerchant, startDate, endDate],
+    [appliedMerchant, appliedStartDate, appliedEndDate],
   );
 
   const filteredInvoices = useMemo(
@@ -94,59 +187,60 @@ export default function AdminStatistics() {
       minimumFractionDigits: 0,
     }).format(val);
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <Box>
-      <Box
+      {/* Header Filter Trigger Control */}
+      <Flex
         bg={cardBg}
         p={5}
         borderRadius="xl"
         border="1px solid"
         borderColor={borderColor}
         mb={6}
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={4}
       >
-        <Text fontWeight="bold" mb={3}>
-          Filter Data
-        </Text>
-        <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-          <Box>
-            <Text fontSize="sm" color="gray.500" mb={1}>
-              Merchant
+        <Box>
+          <Text fontWeight="bold" fontSize="lg">
+            Statistik & Laporan
+          </Text>
+          <HStack spacing={2} mt={1}>
+            <Text fontSize="xs" color="gray.500">
+              Merchant: <b>{appliedMerchant || 'Semua Merchant'}</b>
             </Text>
-            <Select
-              placeholder="All Merchants"
-              value={selectedMerchant}
-              onChange={(e) => setSelectedMerchant(e.target.value)}
-            >
-              {uniqueMerchants.map((m) => (
-                <option key={m} value={m as string}>
-                  {m as string}
-                </option>
-              ))}
-            </Select>
-          </Box>
-          <Box>
-            <Text fontSize="sm" color="gray.500" mb={1}>
-              Start Date
+            <Text fontSize="xs" color="gray.500">
+              •
             </Text>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </Box>
-          <Box>
-            <Text fontSize="sm" color="gray.500" mb={1}>
-              End Date
+            <Text fontSize="xs" color="gray.500">
+              Rentang Tanggal: <b>{appliedStartDate || 'Awal'}</b> s/d{' '}
+              <b>{appliedEndDate || 'Sekarang'}</b>
             </Text>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </Box>
-        </SimpleGrid>
-      </Box>
+          </HStack>
+        </Box>
 
+        <Button
+          leftIcon={<Icon as={MdFilterList as any} />}
+          colorScheme="blue"
+          onClick={onOpen}
+        >
+          Atur Filter Tanggal & Merchant
+        </Button>
+      </Flex>
+
+      {/* Grid Quick Stats Summary */}
       <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap={6} mb={6}>
         {/* Total Invoices */}
         <Box
@@ -234,6 +328,126 @@ export default function AdminStatistics() {
           </Flex>
         </Box>
       </SimpleGrid>
+
+      {/* Tabel Rincian Data Terfilter Sesuai Tanggal Dibuat */}
+      <Box
+        bg={cardBg}
+        p={6}
+        borderRadius="xl"
+        border="1px solid"
+        borderColor={borderColor}
+      >
+        <Text fontWeight="bold" mb={4} fontSize="md">
+          Daftar Invoice Terfilter ({filteredInvoices.length})
+        </Text>
+        <Box overflowX="auto">
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th>ID Invoice</Th>
+                <Th>Pelanggan</Th>
+                <Th>Tanggal Dibuat</Th>
+                <Th>Nominal</Th>
+                <Th>Status</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {filteredInvoices.length === 0 ? (
+                <Tr>
+                  <Td colSpan={5} textAlign="center" color="gray.500" py={6}>
+                    Tidak ada data invoice yang sesuai dengan rentang tanggal /
+                    filter.
+                  </Td>
+                </Tr>
+              ) : (
+                filteredInvoices.map((inv: any) => (
+                  <Tr key={inv.id}>
+                    <Td fontWeight="bold">{inv.id}</Td>
+                    <Td>{inv.customerName}</Td>
+                    <Td>{formatDate(inv.createdAt || inv.date)}</Td>
+                    <Td>{formatIDR(inv.amount)}</Td>
+                    <Td>
+                      <Badge
+                        colorScheme={
+                          inv.status === 'PAID'
+                            ? 'green'
+                            : inv.status === 'EXPIRED'
+                              ? 'red'
+                              : 'orange'
+                        }
+                      >
+                        {inv.status}
+                      </Badge>
+                    </Td>
+                  </Tr>
+                ))
+              )}
+            </Tbody>
+          </Table>
+        </Box>
+      </Box>
+
+      {/* Modal Filter Tanggal & Merchant */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+        <ModalOverlay />
+        <ModalContent borderRadius="20px">
+          <ModalHeader fontWeight="bold">Filter Tanggal & Merchant</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                  Merchant
+                </Text>
+                <Select
+                  placeholder="Semua Merchant"
+                  value={tempMerchant}
+                  onChange={(e) => setTempMerchant(e.target.value)}
+                >
+                  {uniqueMerchants.map((m) => (
+                    <option key={m} value={m as string}>
+                      {m as string}
+                    </option>
+                  ))}
+                </Select>
+              </Box>
+
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                  Tanggal Mulai (Start Date ≥ Today)
+                </Text>
+                <Input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={tempStartDate}
+                  onChange={(e) => setTempStartDate(e.target.value)}
+                />
+              </Box>
+
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>
+                  Tanggal Selesai (End Date)
+                </Text>
+                <Input
+                  type="date"
+                  min={tempStartDate || new Date().toISOString().split('T')[0]}
+                  value={tempEndDate}
+                  onChange={(e) => setTempEndDate(e.target.value)}
+                />
+              </Box>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={handleResetFilter}>
+              Reset
+            </Button>
+            <Button colorScheme="blue" onClick={handleApplyFilter}>
+              Terapkan Filter
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
