@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   SimpleGrid,
@@ -20,6 +20,14 @@ import {
   Badge,
   HStack,
   useToast,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
 } from '@chakra-ui/react';
 import {
   MdPayment,
@@ -32,8 +40,19 @@ import {
 import { useGlobalData } from 'store/useGlobalData';
 import AdminStatistics from './components/adminStats';
 
+interface ConfirmModalConfig {
+  title: string;
+  message: string;
+  confirmText: string;
+  colorScheme: string;
+  onConfirm: () => void;
+}
+
 export default function AdminControlPanel() {
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [modalConfig, setModalConfig] = useState<ConfirmModalConfig | null>(null);
+
   const cardBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -60,6 +79,19 @@ export default function AdminControlPanel() {
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(val);
+
+  const triggerConfirmation = (config: ConfirmModalConfig) => {
+    setModalConfig(config);
+    onOpen();
+  };
+
+  const handleExecuteModalConfirm = () => {
+    if (modalConfig) {
+      modalConfig.onConfirm();
+    }
+    onClose();
+    setModalConfig(null);
+  };
 
   const handleResolveIntent = (id: string, isSuccess: boolean) => {
     resolvePaymentIntent(id, isSuccess);
@@ -97,9 +129,30 @@ export default function AdminControlPanel() {
     });
   };
 
+  const getStatusBadgeScheme = (status: string) => {
+    switch (status) {
+      case 'SUCCESS':
+      case 'APPROVED':
+      case 'PAID':
+        return 'green';
+      case 'WAITING':
+      case 'PENDING':
+      case 'REFUND_PENDING':
+        return 'orange';
+      case 'FAILED':
+      case 'REJECTED':
+      case 'EXPIRED':
+        return 'red';
+      case 'REFUNDED':
+        return 'purple';
+      default:
+        return 'gray';
+    }
+  };
+
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
-      {/* Quick Summary Row (Optional, keep or remove based on preference) */}
+      {/* Quick Summary Row */}
       <SimpleGrid columns={{ base: 1, md: 3 }} gap="20px" mb="20px">
         <Box
           bg={cardBg}
@@ -161,7 +214,7 @@ export default function AdminControlPanel() {
               <Icon as={MdBarChart as any} mr={2} /> Dashboard Stats
             </Tab>
             <Tab>
-              <Icon as={MdPayment as any} mr={2} /> Payment
+              <Icon as={MdPayment as any} mr={2} /> Payments
               {pendingIntents.length > 0 && (
                 <Badge ml={2} colorScheme="green">
                   {pendingIntents.length}
@@ -177,7 +230,7 @@ export default function AdminControlPanel() {
               )}
             </Tab>
             <Tab>
-              <Icon as={MdAutorenew as any} mr={2} /> Refund Management
+              <Icon as={MdAutorenew as any} mr={2} /> Refunds
               {pendingRefunds.length > 0 && (
                 <Badge ml={2} colorScheme="orange">
                   {pendingRefunds.length}
@@ -195,18 +248,14 @@ export default function AdminControlPanel() {
           </TabList>
 
           <TabPanels>
-            {/* STATISTICS PANEL */}
+            {/* STATS PANEL */}
             <TabPanel px={0}>
               <AdminStatistics />
             </TabPanel>
 
-            {/* PAYMENT SIMULATOR PANEL */}
+            {/* PAYMENTS PANEL */}
             <TabPanel px={0}>
               <Box overflowX="auto">
-                <Text mb={4} color="gray.500" fontSize="sm">
-                  Transactions initiated by end-users. Approve them to mark the
-                  invoice as PAID.
-                </Text>
                 <Table variant="simple">
                   <Thead>
                     <Tr>
@@ -214,11 +263,11 @@ export default function AdminControlPanel() {
                       <Th>Invoice ID</Th>
                       <Th>Method</Th>
                       <Th>Amount</Th>
-                      <Th>Actions</Th>
+                      <Th>Status / Action</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {pendingIntents.length === 0 ? (
+                    {transactions.length === 0 ? (
                       <Tr>
                         <Td
                           colSpan={5}
@@ -226,40 +275,60 @@ export default function AdminControlPanel() {
                           color="gray.500"
                           py={4}
                         >
-                          No pending payment intents.
+                          No payment transactions found.
                         </Td>
                       </Tr>
                     ) : (
-                      pendingIntents.map((trx) => (
+                      transactions.map((trx) => (
                         <Tr key={trx.id}>
                           <Td fontWeight="bold">{trx.id}</Td>
                           <Td>{trx.invoiceId}</Td>
                           <Td>
-                            <Badge>{trx.method || 'UNKNOWN'}</Badge>
+                            <Badge>{trx.method || 'STANDARD'}</Badge>
                           </Td>
                           <Td>{formatIDR(trx.amount)}</Td>
                           <Td>
-                            <HStack spacing={2}>
-                              <Button
-                                size="sm"
-                                colorScheme="green"
-                                onClick={() =>
-                                  handleResolveIntent(trx.id, true)
-                                }
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="red"
-                                variant="outline"
-                                onClick={() =>
-                                  handleResolveIntent(trx.id, false)
-                                }
-                              >
-                                Reject
-                              </Button>
-                            </HStack>
+                            {trx.status === 'WAITING' ? (
+                              <HStack spacing={2}>
+                                <Button
+                                  size="sm"
+                                  colorScheme="green"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Pembayaran',
+                                      message: `Apakah Anda yakin ingin menyetujui transaksi ${trx.id} sebesar ${formatIDR(trx.amount)}?`,
+                                      confirmText: 'Setujui',
+                                      colorScheme: 'green',
+                                      onConfirm: () =>
+                                        handleResolveIntent(trx.id, true),
+                                    })
+                                  }
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  colorScheme="red"
+                                  variant="outline"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Penolakan',
+                                      message: `Apakah Anda yakin ingin menolak transaksi ${trx.id}?`,
+                                      confirmText: 'Tolak',
+                                      colorScheme: 'red',
+                                      onConfirm: () =>
+                                        handleResolveIntent(trx.id, false),
+                                    })
+                                  }
+                                >
+                                  Reject
+                                </Button>
+                              </HStack>
+                            ) : (
+                              <Badge colorScheme={getStatusBadgeScheme(trx.status)}>
+                                {trx.status}
+                              </Badge>
+                            )}
                           </Td>
                         </Tr>
                       ))
@@ -273,8 +342,7 @@ export default function AdminControlPanel() {
             <TabPanel px={0}>
               <Box overflowX="auto">
                 <Text mb={4} color="gray.500" fontSize="sm">
-                  Force an invoice to expire to test your webhooks and failure
-                  states.
+                  Force an invoice to expire to test webhooks or manage inactive states.
                 </Text>
                 <Table variant="simple">
                   <Thead>
@@ -282,11 +350,11 @@ export default function AdminControlPanel() {
                       <Th>Invoice ID</Th>
                       <Th>Customer</Th>
                       <Th>Amount</Th>
-                      <Th>Action</Th>
+                      <Th>Status / Action</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {pendingInvoices.length === 0 ? (
+                    {invoices.length === 0 ? (
                       <Tr>
                         <Td
                           colSpan={4}
@@ -294,24 +362,39 @@ export default function AdminControlPanel() {
                           color="gray.500"
                           py={4}
                         >
-                          No pending invoices.
+                          No invoices found.
                         </Td>
                       </Tr>
                     ) : (
-                      pendingInvoices.map((inv) => (
+                      invoices.map((inv) => (
                         <Tr key={inv.id}>
                           <Td fontWeight="bold">{inv.id}</Td>
                           <Td>{inv.customerName}</Td>
                           <Td>{formatIDR(inv.amount)}</Td>
                           <Td>
-                            <Button
-                              size="sm"
-                              colorScheme="orange"
-                              variant="outline"
-                              onClick={() => handleExpireInvoice(inv.id)}
-                            >
-                              Force Expire
-                            </Button>
+                            {inv.status === 'PENDING' ? (
+                              <Button
+                                size="sm"
+                                colorScheme="orange"
+                                variant="outline"
+                                onClick={() =>
+                                  triggerConfirmation({
+                                    title: 'Konfirmasi Kadaluwarsa Invoice',
+                                    message: `Apakah Anda yakin ingin memaksa invoice ${inv.id} menjadi kadaluwarsa?`,
+                                    confirmText: 'Proses Kadaluwarsa',
+                                    colorScheme: 'orange',
+                                    onConfirm: () =>
+                                      handleExpireInvoice(inv.id),
+                                  })
+                                }
+                              >
+                                Force Expire
+                              </Button>
+                            ) : (
+                              <Badge colorScheme={getStatusBadgeScheme(inv.status)}>
+                                {inv.status}
+                              </Badge>
+                            )}
                           </Td>
                         </Tr>
                       ))
@@ -331,11 +414,11 @@ export default function AdminControlPanel() {
                       <Th>Trx ID</Th>
                       <Th>Reason</Th>
                       <Th>Amount</Th>
-                      <Th>Actions</Th>
+                      <Th>Status / Action</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {pendingRefunds.length === 0 ? (
+                    {refunds.length === 0 ? (
                       <Tr>
                         <Td
                           colSpan={5}
@@ -343,11 +426,11 @@ export default function AdminControlPanel() {
                           color="gray.500"
                           py={4}
                         >
-                          No pending refund requests.
+                          No refund requests found.
                         </Td>
                       </Tr>
                     ) : (
-                      pendingRefunds.map((ref) => (
+                      refunds.map((ref) => (
                         <Tr key={ref.id}>
                           <Td fontWeight="bold">{ref.id}</Td>
                           <Td>{ref.transactionId}</Td>
@@ -356,23 +439,47 @@ export default function AdminControlPanel() {
                           </Td>
                           <Td>{formatIDR(ref.amount)}</Td>
                           <Td>
-                            <HStack spacing={2}>
-                              <Button
-                                size="sm"
-                                colorScheme="blue"
-                                onClick={() => handleRefund(ref.id, true)}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="red"
-                                variant="ghost"
-                                onClick={() => handleRefund(ref.id, false)}
-                              >
-                                Reject
-                              </Button>
-                            </HStack>
+                            {ref.status === 'PENDING' ? (
+                              <HStack spacing={2}>
+                                <Button
+                                  size="sm"
+                                  colorScheme="blue"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Refund',
+                                      message: `Apakah Anda yakin ingin menyetujui permintaan refund ${ref.id} sebesar ${formatIDR(ref.amount)}?`,
+                                      confirmText: 'Setujui Refund',
+                                      colorScheme: 'blue',
+                                      onConfirm: () =>
+                                        handleRefund(ref.id, true),
+                                    })
+                                  }
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  colorScheme="red"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Penolakan Refund',
+                                      message: `Apakah Anda yakin ingin menolak permintaan refund ${ref.id}?`,
+                                      confirmText: 'Tolak Refund',
+                                      colorScheme: 'red',
+                                      onConfirm: () =>
+                                        handleRefund(ref.id, false),
+                                    })
+                                  }
+                                >
+                                  Reject
+                                </Button>
+                              </HStack>
+                            ) : (
+                              <Badge colorScheme={getStatusBadgeScheme(ref.status)}>
+                                {ref.status}
+                              </Badge>
+                            )}
                           </Td>
                         </Tr>
                       ))
@@ -391,11 +498,11 @@ export default function AdminControlPanel() {
                       <Th>Top-Up ID</Th>
                       <Th>Date</Th>
                       <Th>Amount</Th>
-                      <Th>Actions</Th>
+                      <Th>Status / Action</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {pendingTopUps.length === 0 ? (
+                    {topUps.length === 0 ? (
                       <Tr>
                         <Td
                           colSpan={4}
@@ -403,11 +510,11 @@ export default function AdminControlPanel() {
                           color="gray.500"
                           py={4}
                         >
-                          No pending top-up requests.
+                          No top-up requests found.
                         </Td>
                       </Tr>
                     ) : (
-                      pendingTopUps.map((topUp) => (
+                      topUps.map((topUp) => (
                         <Tr key={topUp.id}>
                           <Td fontWeight="bold">{topUp.id}</Td>
                           <Td>{topUp.date}</Td>
@@ -415,27 +522,47 @@ export default function AdminControlPanel() {
                             {formatIDR(topUp.amount)}
                           </Td>
                           <Td>
-                            <HStack spacing={2}>
-                              <Button
-                                size="sm"
-                                colorScheme="blue"
-                                onClick={() =>
-                                  handleTopUpAction(topUp.id, true)
-                                }
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="red"
-                                variant="ghost"
-                                onClick={() =>
-                                  handleTopUpAction(topUp.id, false)
-                                }
-                              >
-                                Reject
-                              </Button>
-                            </HStack>
+                            {topUp.status === 'PENDING' ? (
+                              <HStack spacing={2}>
+                                <Button
+                                  size="sm"
+                                  colorScheme="blue"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Top-Up',
+                                      message: `Apakah Anda yakin ingin menyetujui permintaan top-up ${topUp.id} sebesar ${formatIDR(topUp.amount)}?`,
+                                      confirmText: 'Setujui Top-Up',
+                                      colorScheme: 'blue',
+                                      onConfirm: () =>
+                                        handleTopUpAction(topUp.id, true),
+                                    })
+                                  }
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  colorScheme="red"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    triggerConfirmation({
+                                      title: 'Konfirmasi Penolakan Top-Up',
+                                      message: `Apakah Anda yakin ingin menolak permintaan top-up ${topUp.id}?`,
+                                      confirmText: 'Tolak Top-Up',
+                                      colorScheme: 'red',
+                                      onConfirm: () =>
+                                        handleTopUpAction(topUp.id, false),
+                                    })
+                                  }
+                                >
+                                  Reject
+                                </Button>
+                              </HStack>
+                            ) : (
+                              <Badge colorScheme={getStatusBadgeScheme(topUp.status)}>
+                                {topUp.status}
+                              </Badge>
+                            )}
                           </Td>
                         </Tr>
                       ))
@@ -447,6 +574,31 @@ export default function AdminControlPanel() {
           </TabPanels>
         </Tabs>
       </Box>
+
+      {/* CONFIRMATION MODAL (BAHASA INDONESIA) */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+        <ModalOverlay />
+        <ModalContent borderRadius="20px">
+          <ModalHeader fontWeight="bold">
+            {modalConfig?.title || 'Konfirmasi Aksi'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>{modalConfig?.message}</Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              Batal
+            </Button>
+            <Button
+              colorScheme={modalConfig?.colorScheme || 'blue'}
+              onClick={handleExecuteModalConfirm}
+            >
+              {modalConfig?.confirmText || 'Konfirmasi'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

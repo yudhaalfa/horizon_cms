@@ -107,13 +107,12 @@ export default function PublicStatus() {
         >
           <Icon as={FaClock as any} w={20} h={20} color="blue.500" />
           <Heading size="lg" color="blue.500">
-            Menunggu Verifikasi
+            Payment berhasil dilakukan
           </Heading>
           <Text color="gray.600" fontSize="md">
-            <b>Pembayaran berhasil dilakukan</b>, sedang di proses pengecekan
-            oleh admin.
+            Mohon tunggu beberapa saat karena proses verifikasi pembayaran sedang berlangsung.
           </Text>
-          {user?.role === 'MERCHANT' && (
+          {/* {user?.role === 'MERCHANT' && (
             <Button
               mt={4}
               colorScheme="blue"
@@ -121,7 +120,7 @@ export default function PublicStatus() {
             >
               Back to Dashboard
             </Button>
-          )}
+          )} */}
         </VStack>
       </Center>
     );

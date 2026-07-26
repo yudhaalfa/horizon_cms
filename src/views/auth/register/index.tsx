@@ -75,7 +75,7 @@ export default function Register() {
           <FormControl isRequired>
             <FormLabel>Full Name</FormLabel>
             <Input
-              placeholder="Yudo srg"
+              placeholder="Full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -84,7 +84,7 @@ export default function Register() {
           <FormControl isRequired>
             <FormLabel>Store Name</FormLabel>
             <Input
-              placeholder="srg Tech Store"
+              placeholder="Store name"
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
             />
@@ -94,7 +94,7 @@ export default function Register() {
             <FormLabel>Email Address</FormLabel>
             <Input
               type="email"
-              placeholder="merchant@srg.com"
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -104,7 +104,7 @@ export default function Register() {
             <FormLabel>Password</FormLabel>
             <Input
               type="password"
-              placeholder="••••••••"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />

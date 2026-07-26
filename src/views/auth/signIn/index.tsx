@@ -61,16 +61,13 @@ export default function SignIn() {
               <Heading size="lg" mb={2}>
                 Sign In
               </Heading>
-              <Text color="gray.500">
-                Welcome back! Please enter your details.
-              </Text>
             </Box>
 
             <FormControl isRequired>
               <FormLabel>Email Address</FormLabel>
               <Input
                 type="email"
-                placeholder="admin@srg.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -80,7 +77,7 @@ export default function SignIn() {
               <FormLabel>Password</FormLabel>
               <Input
                 type="password"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

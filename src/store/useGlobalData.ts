@@ -6,7 +6,7 @@ export type TransactionStatus =
   | 'PENDING'
   | 'SUCCESS'
   | 'FAILED'
-  | 'REFUND_PENDING'
+  | 'REFUND PENDING'
   | 'REFUNDED'
   | 'WAITING';
 export type RefundStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -63,7 +63,6 @@ export interface MerchantActions {
     merchantName?: string;
   }) => void;
   requestRefund: (transactionId: string, reason: string) => void;
-  // Public
   createPaymentIntent: (invoiceId: string, method: string) => void;
   expireInvoice: (invoiceId: string) => void;
 }
@@ -192,7 +191,7 @@ export const useGlobalData = create<GlobalStore>()(
           refunds: [newRefund, ...state.refunds],
           transactions: state.transactions.map((trx) =>
             trx.id === transactionId
-              ? { ...trx, status: 'REFUND_PENDING' }
+              ? { ...trx, status: 'REFUND PENDING' }
               : trx,
           ),
         }));

@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>()(
         {
           id: 'ADM-001',
           name: 'Super Admin',
-          email: 'admin@srg.com',
+          email: 'admin@dbo.com',
           password: '123',
           role: 'ADMIN',
         },

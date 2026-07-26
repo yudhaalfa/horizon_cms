@@ -69,7 +69,7 @@ export default function TransactionsTable({
                           ? 'green'
                           : trx.status === 'REFUNDED'
                             ? 'purple'
-                            : trx.status === 'REFUND_PENDING'
+                            : trx.status === 'REFUND PENDING'
                               ? 'orange'
                               : 'red'
                       }

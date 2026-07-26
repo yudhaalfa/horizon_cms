@@ -96,7 +96,7 @@ export default function CreateInvoiceModal({
             <FormControl isRequired>
               <FormLabel>Customer Name</FormLabel>
               <Input
-                placeholder="e.g. Budi Santoso"
+                placeholder="Customer Name"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
               />
@@ -105,7 +105,7 @@ export default function CreateInvoiceModal({
             <FormControl isRequired>
               <FormLabel>Item Description</FormLabel>
               <Input
-                placeholder="e.g. Premium T-Shirt Black"
+                placeholder="Item Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -116,7 +116,7 @@ export default function CreateInvoiceModal({
               <Input
                 type="text"
                 inputMode="numeric"
-                placeholder="e.g. 150.000"
+                placeholder="Price"
                 value={displayAmount}
                 onChange={handleAmountChange}
               />

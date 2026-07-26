@@ -96,7 +96,6 @@ export default function AdminStatistics() {
 
   return (
     <Box>
-      {/* FILTER BAR */}
       <Box
         bg={cardBg}
         p={5}
@@ -148,7 +147,6 @@ export default function AdminStatistics() {
         </SimpleGrid>
       </Box>
 
-      {/* STATISTICS GRID */}
       <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} gap={6} mb={6}>
         {/* Total Invoices */}
         <Box

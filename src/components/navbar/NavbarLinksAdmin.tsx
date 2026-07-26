@@ -81,7 +81,7 @@ export default function HeaderLinks(props: { secondary: boolean }) {
           <Avatar
             _hover={{ cursor: 'pointer' }}
             color="white"
-            name="Adela Parkson"
+            name="U"
             bg="#11047A"
             size="sm"
             w="40px"
@@ -108,7 +108,7 @@ export default function HeaderLinks(props: { secondary: boolean }) {
               fontWeight="700"
               color={textColor}
             >
-              👋&nbsp; Hey, Adela
+              👋&nbsp; Hey
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
