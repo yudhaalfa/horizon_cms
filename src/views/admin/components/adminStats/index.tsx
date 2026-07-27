@@ -51,12 +51,10 @@ export default function AdminStatistics() {
   const transactions = useGlobalData((state) => state.transactions);
   const refunds = useGlobalData((state) => state.refunds);
 
-  // Temporary State (Hanya diubah saat mengetik di Modal)
   const [tempMerchant, setTempMerchant] = useState('');
   const [tempStartDate, setTempStartDate] = useState('');
   const [tempEndDate, setTempEndDate] = useState('');
 
-  // Applied State (Hanya aktif setelah menekan tombol "Terapkan Filter")
   const [appliedMerchant, setAppliedMerchant] = useState('');
   const [appliedStartDate, setAppliedStartDate] = useState('');
   const [appliedEndDate, setAppliedEndDate] = useState('');
@@ -68,11 +66,9 @@ export default function AdminStatistics() {
     return Array.from(new Set(merchants));
   }, [invoices]);
 
-  // Handler Konfirmasi Filter dengan Validasi Date >= Today
   const handleApplyFilter = () => {
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Validasi 1: Start Date >= Today
     if (tempStartDate && tempStartDate < todayStr) {
       toast({
         title: 'Validasi Tanggal Gagal',
@@ -86,7 +82,6 @@ export default function AdminStatistics() {
       return;
     }
 
-    // Validasi 2: End Date >= Start Date
     if (tempStartDate && tempEndDate && tempEndDate < tempStartDate) {
       toast({
         title: 'Validasi Tanggal Gagal',
@@ -100,7 +95,6 @@ export default function AdminStatistics() {
       return;
     }
 
-    // Terapkan state jika lolos validasi
     setAppliedMerchant(tempMerchant);
     setAppliedStartDate(tempStartDate);
     setAppliedEndDate(tempEndDate);
@@ -125,7 +119,6 @@ export default function AdminStatistics() {
     onClose();
   };
 
-  // Callback Filter berbasis Applied States
   const filterByDateAndMerchant = useCallback(
     (item: any) => {
       const itemMerchant = item.merchantName || 'Default Merchant';

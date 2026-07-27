@@ -12,7 +12,6 @@ import {
   FormLabel,
   Input,
   useToast,
-  Text,
 } from '@chakra-ui/react';
 
 interface TopUpModalProps {
@@ -50,7 +49,7 @@ export default function TopUpModal({
 
     if (!rawNumber || rawNumber <= 0) {
       toast({
-        title: 'Please enter a valid amount',
+        title: 'Nilai tidak boleh kosong atau kurang dari 1',
         status: 'error',
         duration: 2000,
         position: 'top',
@@ -75,10 +74,6 @@ export default function TopUpModal({
         <ModalHeader>Request Wallet Top-Up</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text mb={4} color="gray.500" fontSize="sm">
-            Enter the amount you wish to add to your wallet. This request will
-            be sent to an Admin for approval.
-          </Text>
           <FormControl>
             <FormLabel>Top-Up Amount (IDR)</FormLabel>
             <Input
