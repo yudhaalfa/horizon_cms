@@ -58,3 +58,134 @@ Ensure you have **Node.js** and **npm** installed.
 Clone the repository and run the following command in your terminal:
 ```bash
 npm install
+```
+
+### 3. Start Development Server
+```bash
+npm start
+```
+
+---
+
+## Testing
+
+This project includes **unit tests** (Jest + React Testing Library) and **performance tests** (k6).
+
+---
+
+### Unit Tests
+
+Unit tests cover stores, layouts, and views. No browser or dev server needed.
+
+#### Run all unit tests with coverage
+```bash
+npm run test:unit
+```
+
+#### Run by category
+```bash
+npm run test:unit:stores    # useAuthStore + useGlobalData (pure logic)
+npm run test:unit:layouts   # AdminLayout + AuthLayout + AuthIllustration
+npm run test:unit:views     # All view tests (auth, admin, merchant, public)
+```
+
+#### Run in watch mode (during development)
+```bash
+npm test
+```
+
+#### Test file locations
+
+| Category | Path | Coverage |
+|---|---|---|
+| Stores | `src/__tests__/stores/useAuthStore.test.ts` | login, register, logout, admin seed |
+| Stores | `src/__tests__/stores/useGlobalData.test.ts` | invoice lifecycle, payment state machine, refunds, top-ups |
+| Layouts | `src/__tests__/layouts/admin.test.tsx` | AdminLayout render, path detection |
+| Layouts | `src/__tests__/layouts/auth.test.tsx` | AuthLayout route filtering |
+| Layouts | `src/__tests__/layouts/Default.test.tsx` | AuthIllustration children/props |
+| Views/Auth | `src/__tests__/views/auth/signIn.test.tsx` | form render, email validation, login flow |
+| Views/Auth | `src/__tests__/views/auth/register.test.tsx` | form render, validation, register flow |
+| Views/Auth | `src/__tests__/views/auth/signOut.test.tsx` | render, logout call |
+| Views/Admin | `src/__tests__/views/admin/adminPanel.test.tsx` | tabs, payment approval, refund, top-up, expire |
+| Views/Merchant | `src/__tests__/views/merchant/dashboard.test.tsx` | balance display, tabs, invoice/top-up/refund modals |
+| Views/Public | `src/__tests__/views/public/payment.test.tsx` | invalid link, PAID/EXPIRED states, checkout, timer |
+| Views/Public | `src/__tests__/views/public/status.test.tsx` | all invoice statuses, MERCHANT vs guest buttons |
+
+---
+
+### Performance Tests (k6)
+
+k6 load-tests the **HTTP delivery** of the SPA bundle from the dev server. Since auth is client-side (Zustand/localStorage), these tests measure page-load response times under concurrent virtual users.
+
+#### Prerequisites
+
+**Install k6:**
+```bash
+# macOS
+brew install k6
+
+# Windows (Chocolatey)
+choco install k6
+
+# Linux
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6
+```
+
+**Start the dev server first:**
+```bash
+npm start
+# Wait until "Compiled successfully" appears, then run k6 in a separate terminal
+```
+
+#### Run individual tests
+```bash
+npm run test:k6:login      # Auth page load (ramp to 50 VUs)
+npm run test:k6:payment    # Public payment page load (ramp to 50 VUs)
+npm run test:k6:dashboard  # Dashboard load — merchant (40 VUs) + admin (10 VUs)
+```
+
+#### Run all k6 tests sequentially
+```bash
+npm run test:k6:all
+```
+
+#### Custom base URL
+```bash
+k6 run -e BASE_URL=http://localhost:3000 k6/login.js
+```
+
+#### k6 Script details
+
+| Script | File | Scenario | Peak VUs | Thresholds |
+|---|---|---|---|---|
+| Login Page | `k6/login.js` | Auth + Register page load | 50 | p95 < 2000ms, error < 1% |
+| Public Payment | `k6/public-payment.js` | `/pay/:token` + `/public-status/:id` | 50 | p95 < 1500ms, error < 0.5% |
+| Dashboard | `k6/dashboard.js` | Merchant (40 VUs) + Admin (10 VUs) concurrent | 50 | p95 < 2000ms, error < 1% |
+
+#### Understanding k6 output
+
+```
+scenarios: (100.00%) 1 scenario, 50 max VUs
+...
+http_req_duration............: avg=120ms  p(95)=380ms
+http_req_failed..............: 0.00%
+```
+
+- **`p(95)`** — 95th percentile: 95% of users got responses faster than this
+- **`http_req_failed`** — HTTP error rate (non-2xx/3xx responses)
+- **`errors`** — Custom check failure rate
+
+A test passes if all thresholds are green (`✓`). Red (`✗`) means the server is too slow or returning errors under load.
+
+---
+
+### Upgrade Path
+
+| When | What to add |
+|---|---|
+| Real backend API added | Add k6 scenarios for POST `/login`, POST `/pay`, etc. |
+| Need Core Web Vitals | Add Lighthouse CI (`@lhci/cli`) measuring TTI, LCP, CLS |
+| Need true E2E browser testing | Use k6 browser module or Playwright for full user flow simulation |
